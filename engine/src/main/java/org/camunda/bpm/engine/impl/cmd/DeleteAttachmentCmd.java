@@ -16,8 +16,11 @@
  */
 package org.camunda.bpm.engine.impl.cmd;
 
+import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
+
 import java.io.Serializable;
 
+import java.util.Objects;
 import org.camunda.bpm.engine.history.UserOperationLogEntry;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
@@ -34,37 +37,54 @@ public class DeleteAttachmentCmd implements Command<Object>, Serializable {
 
   private static final long serialVersionUID = 1L;
   protected String attachmentId;
+  protected String taskId;
 
   public DeleteAttachmentCmd(String attachmentId) {
     this.attachmentId = attachmentId;
   }
 
+  public DeleteAttachmentCmd(String taskId, String attachmentId) {
+    this.taskId = taskId;
+    this.attachmentId = attachmentId;
+  }
+
   public Object execute(CommandContext commandContext) {
-    AttachmentEntity attachment = commandContext
-      .getDbEntityManager()
-      .selectById(AttachmentEntity.class, attachmentId);
+    AttachmentEntity attachment = null;
+    if (taskId != null && !taskId.isBlank()) {
+      attachment = (AttachmentEntity) commandContext
+          .getAttachmentManager()
+          .findAttachmentByTaskIdAndAttachmentId(taskId, attachmentId);
+      ensureNotNull("No attachment exists for task id '" + taskId + " and attachmentId '" + attachmentId + "'.", "attachment", attachment);
+    } else {
+      attachment = commandContext
+          .getDbEntityManager()
+          .selectById(AttachmentEntity.class, attachmentId);
+      ensureNotNull("No attachment exists with attachmentId '" + attachmentId + "'.", "attachment", attachment);
+    }
 
     commandContext
-      .getDbEntityManager()
-      .delete(attachment);
+        .getDbEntityManager()
+        .delete(attachment);
 
     if (attachment.getContentId() != null) {
       commandContext
-        .getByteArrayManager()
-        .deleteByteArrayById(attachment.getContentId());
+          .getByteArrayManager()
+          .deleteByteArrayById(attachment.getContentId());
     }
 
-    if (attachment.getTaskId()!=null) {
+    if (attachment.getTaskId() != null && !attachment.getTaskId().isBlank()) {
       TaskEntity task = commandContext
           .getTaskManager()
           .findTaskById(attachment.getTaskId());
 
-      PropertyChange propertyChange = new PropertyChange("name", null, attachment.getName());
+      if (task != null) {
+        PropertyChange propertyChange = new PropertyChange("name", null, attachment.getName());
 
-      commandContext.getOperationLogManager()
-          .logAttachmentOperation(UserOperationLogEntry.OPERATION_TYPE_DELETE_ATTACHMENT, task, propertyChange);
+        commandContext.getOperationLogManager()
+            .logAttachmentOperation(UserOperationLogEntry.OPERATION_TYPE_DELETE_ATTACHMENT, task, propertyChange);
 
-      task.triggerUpdateEvent();
+        task.triggerUpdateEvent();
+      }
     }
 
     return null;

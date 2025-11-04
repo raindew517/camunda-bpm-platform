@@ -21,9 +21,7 @@ import org.camunda.bpm.client.dto.HistoricProcessInstanceDto;
 import org.camunda.bpm.client.dto.ProcessInstanceDto;
 import org.camunda.bpm.client.exception.BadRequestException;
 import org.camunda.bpm.client.exception.EngineException;
-import org.camunda.bpm.client.exception.NotAcquiredException;
 import org.camunda.bpm.client.exception.NotFoundException;
-import org.camunda.bpm.client.exception.NotResumedException;
 import org.camunda.bpm.client.exception.UnknownHttpErrorException;
 import org.camunda.bpm.client.rule.ClientRule;
 import org.camunda.bpm.client.rule.EngineRule;
@@ -123,7 +121,7 @@ public class PaExceptionIT {
 
     // then
     EngineException px = (EngineException) catchThrowable(() -> service.complete(task));
-    assertThat(px).isInstanceOf(NotResumedException.class);
+    assertThat(px).isInstanceOf(EngineException.class);
     assertThat(px.getCode()).isEqualTo(22_222);
     assertThat(px.getType()).isEqualTo("ProcessEngineException");
     assertThat(px.getMessage()).isEqualTo("TASK/CLIENT-01009 Exception while completing the external task: my_error_message");
@@ -190,8 +188,8 @@ public class PaExceptionIT {
 
   @Test
   public void shouldThrowBadRequestException() {
-    ProcessInstanceDto processInstance = engineRule.startProcessInstanceByKey("Process_14ltot0");
-    processInstances.add(processInstance);
+    ProcessInstanceDto processInstance1 = engineRule.startProcessInstanceByKey("Process_14ltot0");
+    processInstances.add(processInstance1);
 
     // given
     client.subscribe("my-topic")
@@ -204,13 +202,14 @@ public class PaExceptionIT {
     RecordedInvocation invocation = invocationHandler.getInvocations().get(0);
     ExternalTaskService service = invocation.getExternalTaskService();
 
-    String processInstanceId = engineRule.startProcessInstanceByKey(PROCESS_DEFINITION_KEY).getId();
+    ProcessInstanceDto processInstance2 = engineRule.startProcessInstanceByKey(PROCESS_DEFINITION_KEY);
+    processInstances.add(processInstance2);
 
-    ExternalTask externalTask = engineRule.getExternalTaskByProcessInstanceId(processInstanceId);
+    ExternalTask externalTask = engineRule.getExternalTaskByProcessInstanceId(processInstance2.getId());
 
     // then
     BadRequestException px = (BadRequestException) catchThrowable(() -> service.complete(externalTask));
-    assertThat(px).isInstanceOf(NotAcquiredException.class);
+    assertThat(px).isInstanceOf(BadRequestException.class);
     assertThat(px.getCode()).isEqualTo(0);
     assertThat(px.getType()).isEqualTo("RestException");
     assertThat(px.getMessage()).matches("TASK/CLIENT-01007 Exception while completing the external task: "

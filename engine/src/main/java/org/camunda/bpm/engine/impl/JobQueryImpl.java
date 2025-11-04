@@ -48,6 +48,7 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
   protected String id;
   protected Set<String> ids;
   protected String jobDefinitionId;
+  protected String rootProcessInstanceId;
   protected String processInstanceId;
   protected Set<String> processInstanceIds;
   protected String executionId;
@@ -70,6 +71,7 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
   protected String failedActivityId;
   protected boolean noRetriesLeft;
   protected SuspensionState suspensionState;
+  protected boolean acquired;
 
   protected boolean isTenantIdSet = false;
   protected String[] tenantIds;
@@ -97,6 +99,12 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
   public JobQuery jobDefinitionId(String jobDefinitionId) {
     ensureNotNull("Provided job definition id", jobDefinitionId);
     this.jobDefinitionId = jobDefinitionId;
+    return this;
+  }
+
+  public JobQueryImpl rootProcessInstanceId(String rootProcessInstanceId) {
+    ensureNotNull("Provided root process instance id", rootProcessInstanceId);
+    this.rootProcessInstanceId = rootProcessInstanceId;
     return this;
   }
 
@@ -250,6 +258,11 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
     return this;
   }
 
+  public JobQuery acquired() {
+    acquired = true;
+    return this;
+  }
+
   @Override
   protected boolean hasExcludingConditions() {
     return super.hasExcludingConditions()
@@ -368,6 +381,9 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
   public Set<String> getIds() {
     return ids;
   }
+  public String getRootProcessInstanceId() {
+    return rootProcessInstanceId;
+  }
   public String getProcessInstanceId() {
     return processInstanceId;
   }
@@ -391,6 +407,9 @@ public class JobQueryImpl extends AbstractQuery<JobQuery, Job> implements JobQue
   }
   public String getExceptionMessage() {
     return exceptionMessage;
+  }
+  public boolean getAcquired() {
+    return acquired;
   }
 
 }

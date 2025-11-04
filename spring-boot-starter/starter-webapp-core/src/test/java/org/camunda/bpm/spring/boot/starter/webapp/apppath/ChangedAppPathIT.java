@@ -16,15 +16,15 @@
  */
 package org.camunda.bpm.spring.boot.starter.webapp.apppath;
 
-import org.camunda.bpm.spring.boot.starter.webapp.TestApplication;
-import org.camunda.bpm.spring.boot.starter.webapp.filter.util.HeaderRule;
+import org.camunda.bpm.spring.boot.starter.webapp.WebappTestApp;
+import org.camunda.bpm.spring.boot.starter.webapp.filter.util.HttpClientRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
@@ -39,7 +39,7 @@ import static org.camunda.bpm.webapp.impl.security.filter.headersec.provider.imp
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = { TestApplication.class },
+    classes = { WebappTestApp.class },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
     "camunda.bpm.webapp.applicationPath=" + ChangedAppPathIT.MY_APP_PATH
@@ -49,7 +49,7 @@ public class ChangedAppPathIT {
   protected static final String MY_APP_PATH = "/my/application/path";
 
   @Rule
-  public HeaderRule headerRule = new HeaderRule();
+  public HttpClientRule httpClientRule = new HttpClientRule();
 
   @LocalServerPort
   public int port;
@@ -62,12 +62,12 @@ public class ChangedAppPathIT {
     // given
 
     // when
-    headerRule.performRequest("http://localhost:" + port + MY_APP_PATH +
+    httpClientRule.performRequest("http://localhost:" + port + MY_APP_PATH +
         "/app/tasklist/default");
 
     // then
-    String xsrfCookieValue = headerRule.getXsrfCookieValue();
-    String xsrfTokenHeader = headerRule.getXsrfTokenHeader();
+    String xsrfCookieValue = httpClientRule.getXsrfCookie();
+    String xsrfTokenHeader = httpClientRule.getXsrfTokenHeader();
 
     assertThat(xsrfCookieValue).matches("XSRF-TOKEN=[A-Z0-9]{32};" +
         "Path=" + MY_APP_PATH + ";SameSite=Lax");
@@ -81,10 +81,10 @@ public class ChangedAppPathIT {
     // given
 
     // when
-    headerRule.performRequest("http://localhost:" + port + "/");
+    httpClientRule.performRequest("http://localhost:" + port + "/");
 
     // then
-    assertThat(headerRule.getHeader("Location")).isEqualTo("http://localhost:" + port +
+    assertThat(httpClientRule.getHeader("Location")).isEqualTo("http://localhost:" + port +
         MY_APP_PATH + "/app/");
   }
 
@@ -149,7 +149,7 @@ public class ChangedAppPathIT {
 
     // when
     ResponseEntity<String> response = restClient.getForEntity(MY_APP_PATH +
-        "/lib/require.js", String.class);
+        "/lib/deps.js", String.class);
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

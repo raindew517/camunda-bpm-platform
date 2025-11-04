@@ -30,6 +30,7 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.delegate.DelegateTask;
 import org.camunda.bpm.engine.delegate.TaskListener;
+import org.camunda.bpm.engine.impl.util.ClockUtil;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.Deployment;
@@ -104,7 +105,8 @@ public class DelegateTaskTest {
   public void testGetFollowUpDate() {
     // given
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("process")
-      .startEvent()
+        .camundaHistoryTimeToLive(180)
+        .startEvent()
       .userTask()
         .camundaFollowUpDate(FOLLOW_UP_DATE_STRING)
         .camundaTaskListenerClass("create", GetFollowUpDateListener.class)
@@ -128,7 +130,8 @@ public class DelegateTaskTest {
   public void testSetFollowUpDate() {
     // given
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("process")
-      .startEvent()
+        .camundaHistoryTimeToLive(180)
+        .startEvent()
       .userTask()
         .camundaTaskListenerClass("create", SetFollowUpDateListener.class)
       .endEvent()
@@ -145,6 +148,33 @@ public class DelegateTaskTest {
 
     assertThat(followUpDate).isNotNull();
     assertThat(followUpDate).isEqualTo(FOLLOW_UP_DATE);
+  }
+
+  @Test
+  public void testLastUpdated() {
+    // given
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("process")
+        .camundaHistoryTimeToLive(180)
+        .startEvent()
+        .userTask()
+          .camundaTaskListenerClass(TaskListener.EVENTNAME_UPDATE, LastUpdateListener.class)
+        .endEvent()
+        .done();
+
+    testRule.deploy(modelInstance);
+    String processInstanceId = runtimeService.startProcessInstanceByKey("process").getProcessInstanceId();
+    Date beforeUpdate = new Date(ClockUtil.getCurrentTime().getTime() - 1000L);
+    Task task = taskService.createTaskQuery().singleResult();
+    task.setPriority(0);
+
+    // when
+    taskService.saveTask(task);
+
+    // then
+
+    Date lastUpdated = (Date) runtimeService.getVariable(processInstanceId, "lastUpdated");
+    assertThat(lastUpdated).isNotNull();
+    assertThat(lastUpdated).isAfter(beforeUpdate);
   }
 
   public static class GetFollowUpDateListener implements TaskListener {
@@ -164,6 +194,17 @@ public class DelegateTaskTest {
     @Override
     public void notify(DelegateTask delegateTask) {
       delegateTask.setFollowUpDate(FOLLOW_UP_DATE);
+    }
+
+  }
+
+  public static class LastUpdateListener implements TaskListener {
+
+    @Override
+    public void notify(DelegateTask delegateTask) {
+      Date lastUpdated = delegateTask.getLastUpdated();
+
+      delegateTask.setVariable("lastUpdated", lastUpdated);
     }
 
   }

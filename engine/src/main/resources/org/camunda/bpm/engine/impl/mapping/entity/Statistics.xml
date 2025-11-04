@@ -39,6 +39,7 @@
     <result property="suspensionState" column="SUSPENSION_STATE_" jdbcType="INTEGER"/>
     <result property="tenantId" column="TENANT_ID_" jdbcType="VARCHAR" />
     <result property="versionTag" column="VERSION_TAG_" jdbcType="VARCHAR" />
+    <result property="isStartableInTasklist" column="STARTABLE_" jdbcType="BOOLEAN" />
     <collection property="incidentStatistics" javaType="ArrayList" ofType="org.camunda.bpm.engine.impl.persistence.entity.IncidentStatisticsEntity">
       <result property="incidentType" column="INCIDENT_TYPE_" jdbcType="VARCHAR" />
       <result property="incidentCount" column="INCIDENT_COUNT_" jdbcType="INTEGER"/>
@@ -86,6 +87,7 @@
     <result property="createUserId" column="CREATE_USER_ID_" jdbcType="VARCHAR" />
     <result property="suspensionState" column="SUSPENSION_STATE_" jdbcType="INTEGER" />
     <result property="startTime" column="START_TIME_" jdbcType="TIMESTAMP" />
+    <result property="executionStartTime" column="EXEC_START_TIME_" jdbcType="TIMESTAMP" />
   </resultMap>
 
   <resultMap id="decisionDefinitionStatisticsResultMap" type="org.camunda.bpm.engine.impl.persistence.entity.DecisionInstanceStatisticsImpl">
@@ -492,7 +494,7 @@
                   on
                       E.PROC_DEF_ID_ = P.ID_
 
-                    <if test="!revokeAuthorizationCheckEnabled">
+                  <if test="!revokeAuthorizationCheckEnabled">
                       <bind name="atomicChecks" value="processInstancePermissionChecks" />
                       <include refid="org.camunda.bpm.engine.impl.persistence.entity.AuthorizationEntity.authCheckJoinWithoutOnClauseWithBinding" />
                       AUTH ON (AUTH.RESOURCE_ID_ ${authJoinStart} E.PROC_INST_ID_ ${authJoinSeparator} P.KEY_ ${authJoinSeparator} '*' ${authJoinEnd})
@@ -602,6 +604,9 @@
                     <bind name="permissionChecks" value="processInstancePermissionChecks" />
                     <include refid="acitivityStatisticsAuthorizationCheck" />
 
+                    <bind name="columnPrefix" value="'E.'"/>
+                    <include refid="org.camunda.bpm.engine.impl.persistence.entity.TenantEntity.queryTenantCheckWithPrefix" />
+
                    group by
                     E.ACT_ID_
                ) INSTANCE
@@ -636,6 +641,9 @@
 
                     <bind name="permissionChecks" value="jobPermissionChecks" />
                     <include refid="acitivityStatisticsAuthorizationCheck" />
+
+                    <bind name="columnPrefix" value="'JOB.'"/>
+                    <include refid="org.camunda.bpm.engine.impl.persistence.entity.TenantEntity.queryTenantCheckWithPrefix" />
 
                 group by
                     JOBDEF.ACT_ID_
@@ -676,6 +684,8 @@
                   <bind name="permissionChecks" value="incidentPermissionChecks" />
                   <include refid="acitivityStatisticsAuthorizationCheck" />
 
+                  <bind name="columnPrefix" value="'I.'"/>
+                  <include refid="org.camunda.bpm.engine.impl.persistence.entity.TenantEntity.queryTenantCheckWithPrefix" />
               group by
                   I.ACTIVITY_ID_, I.INCIDENT_TYPE_
             ) INC
@@ -773,6 +783,21 @@
        </if>
        <if test="suspensionState != null">
          and RES.SUSPENSION_STATE_ = #{suspensionState.stateCode}
+       </if>
+       <if test="userId != null">
+         and RES.CREATE_USER_ID_ = #{userId}
+       </if>
+       <if test="startedBefore != null">
+         and RES.START_TIME_ &lt;= #{startedBefore}
+       </if>
+       <if test="startedAfter != null">
+         and RES.START_TIME_ &gt;= #{startedAfter}
+       </if>
+       <if test="hasFailure == true">
+         and JOB.FAILED_JOBS_COUNT_ != 0
+       </if>
+       <if test="hasFailure == false">
+         and (JOB.FAILED_JOBS_COUNT_ is null or JOB.FAILED_JOBS_COUNT_ = 0)
        </if>
 
        <include refid="org.camunda.bpm.engine.impl.persistence.entity.AuthorizationEntity.queryAuthorizationCheck" />

@@ -5,7 +5,7 @@
 
   <dependencies>
 
-    <module name="javax.api" />
+    <module name="java.base" />
     <module name="org.joda.time" slot="2.1" />
 
     <module name="org.camunda.commons.camunda-commons-typed-values" />
@@ -14,7 +14,7 @@
 
     <module name="org.camunda.spin.camunda-spin-core" />
     <module name="org.camunda.spin.camunda-spin-dataformat-json-jackson" services="import" />
-    <module name="org.camunda.spin.camunda-spin-dataformat-xml-dom" services="import" />
+    <module name="org.camunda.spin.camunda-spin-dataformat-xml-dom-jakarta" services="import" />
 
     <module name="org.camunda.bpm.dmn.camunda-engine-feel-scala" />
     <module name="org.camunda.feel.feel-engine" />

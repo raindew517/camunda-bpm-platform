@@ -17,13 +17,13 @@
 package org.camunda.bpm.spring.boot.starter.webapp.filter.csrf.it.properties;
 
 import org.camunda.bpm.spring.boot.starter.property.WebappProperty;
-import org.camunda.bpm.spring.boot.starter.webapp.filter.util.HeaderRule;
-import org.camunda.bpm.spring.boot.starter.webapp.filter.util.TestApplication;
+import org.camunda.bpm.spring.boot.starter.webapp.filter.util.HttpClientRule;
+import org.camunda.bpm.spring.boot.starter.webapp.filter.util.FilterTestApp;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -31,7 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = { TestApplication.class }, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = { FilterTestApp.class }, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
   "camunda.bpm.webapp.csrf.cookieName=myFancyCookieName"
 })
@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CookieNameIT {
 
   @Rule
-  public HeaderRule headerRule = new HeaderRule();
+  public HttpClientRule httpClientRule = new HttpClientRule();
 
   @LocalServerPort
   public int port;
@@ -49,10 +49,10 @@ public class CookieNameIT {
     // given
 
     // when
-    headerRule.performRequest("http://localhost:" + port + "/camunda/app/tasklist/default");
+    httpClientRule.performRequest("http://localhost:" + port + "/camunda/app/tasklist/default");
 
-    String xsrfCookieValue = headerRule.getCookieValue("myFancyCookieName");
-    String xsrfTokenHeader = headerRule.getXsrfTokenHeader();
+    String xsrfCookieValue = httpClientRule.getCookie("myFancyCookieName");
+    String xsrfTokenHeader = httpClientRule.getXsrfTokenHeader();
 
     // then
     assertThat(xsrfCookieValue).matches("myFancyCookieName=[A-Z0-9]{32};" +

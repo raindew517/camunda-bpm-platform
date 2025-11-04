@@ -22,6 +22,7 @@ import java.util.Map.Entry;
 import javax.ws.rs.core.Response.Status;
 
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException;
+import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.rest.MessageRestService;
 import org.camunda.bpm.engine.rest.dto.VariableValueDto;
@@ -115,6 +116,7 @@ public class MessageRestServiceImpl extends AbstractRestProcessEngineAware imple
   }
 
   protected MessageCorrelationBuilder createMessageCorrelationBuilder(CorrelationMessageDto messageDto) {
+    ProcessEngine processEngine = getProcessEngine();
     RuntimeService runtimeService = processEngine.getRuntimeService();
 
     ObjectMapper objectMapper = getObjectMapper();
@@ -122,6 +124,7 @@ public class MessageRestServiceImpl extends AbstractRestProcessEngineAware imple
     Map<String, Object> localCorrelationKeys = VariableValueDto.toMap(messageDto.getLocalCorrelationKeys(), processEngine, objectMapper);
     Map<String, Object> processVariables = VariableValueDto.toMap(messageDto.getProcessVariables(), processEngine, objectMapper);
     Map<String, Object> processVariablesLocal = VariableValueDto.toMap(messageDto.getProcessVariablesLocal(), processEngine, objectMapper);
+    Map<String, Object> processVariablesToTriggeredScope = VariableValueDto.toMap(messageDto.getProcessVariablesToTriggeredScope(), processEngine, objectMapper);
 
     MessageCorrelationBuilder builder = runtimeService
         .createMessageCorrelation(messageDto.getMessageName());
@@ -131,6 +134,9 @@ public class MessageRestServiceImpl extends AbstractRestProcessEngineAware imple
     }
     if (processVariablesLocal != null) {
       builder.setVariablesLocal(processVariablesLocal);
+    }
+    if (processVariablesToTriggeredScope != null) {
+      builder.setVariablesToTriggeredScope(processVariablesToTriggeredScope);
     }
     if (messageDto.getBusinessKey() != null) {
       builder.processInstanceBusinessKey(messageDto.getBusinessKey());

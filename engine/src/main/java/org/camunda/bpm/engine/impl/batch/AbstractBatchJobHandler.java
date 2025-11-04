@@ -16,28 +16,37 @@
  */
 package org.camunda.bpm.engine.impl.batch;
 
+import com.google.gson.JsonElement;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.context.Context;
+import org.camunda.bpm.engine.impl.db.DbEntity;
+import org.camunda.bpm.engine.impl.db.entitymanager.OptimisticLockingListener;
+import org.camunda.bpm.engine.impl.db.entitymanager.OptimisticLockingResult;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.jobexecutor.JobDeclaration;
-import org.camunda.bpm.engine.impl.json.JsonObjectConverter;
 import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayManager;
+import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobManager;
 import org.camunda.bpm.engine.impl.persistence.entity.MessageEntity;
+import org.camunda.bpm.engine.impl.util.ClockUtil;
 import org.camunda.bpm.engine.impl.util.JsonUtil;
-import com.google.gson.JsonElement;
-
-import java.util.Iterator;
-import java.util.List;
 
 /**
  * Common methods for batch job handlers based on list of ids, providing serialization, configuration instantiation, etc.
  *
  * @author Askar Akhmerov
  */
-public abstract class AbstractBatchJobHandler<T extends BatchConfiguration> implements BatchJobHandler<T> {
+public abstract class AbstractBatchJobHandler<T extends BatchConfiguration> implements BatchJobHandler<T>, OptimisticLockingListener {
 
+  @Override
   public abstract JobDeclaration<BatchJobContext, MessageEntity> getJobDeclaration();
 
   @Override
@@ -79,6 +88,40 @@ public abstract class AbstractBatchJobHandler<T extends BatchConfiguration> impl
 
     return deploymentAware ? idMappings.isEmpty() : ids.isEmpty();
   }
+
+  @Override
+  public final void execute(final BatchJobConfiguration configuration,
+                            final ExecutionEntity execution,
+                            final CommandContext commandContext,
+                            final String tenantId) {
+
+    // load handler config
+    String byteArrayId = configuration.getConfigurationByteArrayId();
+    ByteArrayEntity byteArray = commandContext.getDbEntityManager().selectById(ByteArrayEntity.class, byteArrayId);
+    byte[] configurationByteArray = byteArray.getBytes();
+    T batchConfiguration = readConfiguration(configurationByteArray);
+
+    // load batch
+    String batchId = batchConfiguration.getBatchId();
+    final BatchEntity batch = commandContext.getBatchManager().findBatchById(batchId);
+
+    // set executionStartTime & fire historic update event
+    if (batch != null && batch.getExecutionStartTime() == null) {
+      // batches with multiple jobs could trigger an OptimisticLockingException, register listener to ignore that
+      commandContext.getDbEntityManager().registerOptimisticLockingListener(this);
+
+      final Date executionStartTime = ClockUtil.now();
+      batch.setExecutionStartTime(executionStartTime);
+      batch.fireHistoricUpdateEvent();
+    }
+
+    executeHandler(batchConfiguration, execution, commandContext, tenantId);
+  }
+
+  protected abstract void executeHandler(final T configuration,
+                                         final ExecutionEntity execution,
+                                         final CommandContext commandContext,
+                                         final String tenantId);
 
   protected void sanitizeMappings(DeploymentMappings idMappings, List<String> ids) {
     // for mixed version SeedJob execution, there might be ids that have been processed
@@ -193,5 +236,31 @@ public abstract class AbstractBatchJobHandler<T extends BatchConfiguration> impl
     return getJsonConverterInstance().toObject(JsonUtil.asObject(serializedConfiguration));
   }
 
-  protected abstract JsonObjectConverter<T> getJsonConverterInstance();
+  protected abstract AbstractBatchConfigurationObjectConverter<T> getJsonConverterInstance();
+
+  @Override
+  public Class<? extends DbEntity> getEntityType() {
+    return BatchEntity.class;
+  }
+
+  @Override
+  public OptimisticLockingResult failedOperation(final DbOperation operation) {
+    if (operation instanceof DbEntityOperation) {
+      return OptimisticLockingResult.IGNORE;
+    }
+    return OptimisticLockingResult.THROW;
+  }
+
+  @Override
+  public int calculateInvocationsPerBatchJob(String batchType, T configuration) {
+    ProcessEngineConfigurationImpl engineConfig = Context.getProcessEngineConfiguration();
+    Map<String, Integer> invocationsPerBatchJobByBatchType = engineConfig.getInvocationsPerBatchJobByBatchType();
+    Integer invocationCount = invocationsPerBatchJobByBatchType.get(batchType);
+    if (invocationCount != null) {
+      return invocationCount;
+    } else {
+      return engineConfig.getInvocationsPerBatchJob();
+    }
+  }
+
 }

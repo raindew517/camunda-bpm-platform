@@ -39,6 +39,9 @@ public interface JobQuery extends Query<JobQuery, Job> {
   /** Only select jobs which exist for the given job definition id. **/
   JobQuery jobDefinitionId(String jobDefinitionId);
 
+  /** Only select jobs which exist for the given root process instance. **/
+  JobQuery rootProcessInstanceId(String rootProcessInstanceId);
+
   /** Only select jobs which exist for the given process instance. **/
   JobQuery processInstanceId(String processInstanceId);
 
@@ -187,5 +190,11 @@ public interface JobQuery extends Query<JobQuery, Job> {
    * Note that the ordering of job without tenant id is database-specific.
    */
   JobQuery orderByTenantId();
+
+  /**
+   * Only select jobs that are currently being acquired,
+   * ie. lock expiration time is not null, lock expiration is in future
+   */
+  JobQuery acquired();
 
 }

@@ -3,10 +3,14 @@
 
   <modelVersion>4.0.0</modelVersion>
 
+  <description>
+    Note: 7.24.0 is the last community edition release published on Maven Central. This library will not receive any new versions or releases. However, if you are interested in extended maintenance you could look into our enterprise edition. Get in touch with us: https://camunda.com/contact/
+  </description>
+
   <parent>
     <groupId>org.camunda.bpm.springboot.project</groupId>
     <artifactId>qa-webapp</artifactId>
-    <version>7.18.0-SNAPSHOT</version>
+    <version>7.24.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>qa-webapp-ce-runtime</artifactId>
@@ -15,10 +19,10 @@
   <properties>
     <version.jersey-json>1.15</version.jersey-json>
     <version.h2>1.4.199</version.h2>
-    <version.glassfish-jaxb>2.3.1</version.glassfish-jaxb>
+    <version.jaxb-api>2.3.1</version.jaxb-api>
     <version.jersey-apache-client>1.15</version.jersey-apache-client>
     <version.junit>4.12</version.junit>
-    <version.chromedriver>78.0.3904.70</version.chromedriver>
+    <version.chromedriver>112.0.5615.49</version.chromedriver>
 
     <http.port>58080</http.port>
     <http.ctx-path.webapp>camunda/</http.ctx-path.webapp>
@@ -30,6 +34,7 @@
       <id>integration-test-spring-boot-starter</id>
 
       <dependencies>
+
         <!-- Web Applications -->
         <dependency>
           <groupId>org.camunda.bpm.springboot</groupId>
@@ -74,9 +79,9 @@
         </dependency>
 
         <dependency>
-          <groupId>com.sun.jersey.contribs</groupId>
-          <artifactId>jersey-apache-client4</artifactId>
-          <version>${version.jersey-apache-client}</version>
+          <groupId>org.apache.httpcomponents.client5</groupId>
+          <artifactId>httpclient5</artifactId>
+          <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -86,35 +91,31 @@
         </dependency>
 
         <dependency>
-          <groupId>org.seleniumhq.selenium</groupId>
-          <artifactId>selenium-remote-driver</artifactId>
-          <version>${version.selenium}</version>
+          <groupId>org.graalvm.js</groupId>
+          <artifactId>js</artifactId>
+          <version>${version.graal.js}</version>
         </dependency>
 
         <dependency>
-          <groupId>org.seleniumhq.selenium</groupId>
-          <artifactId>selenium-chrome-driver</artifactId>
-          <version>${version.selenium}</version>
+          <groupId>org.graalvm.js</groupId>
+          <artifactId>js-scriptengine</artifactId>
+          <version>${version.graal.js}</version>
         </dependency>
 
         <dependency>
-          <groupId>org.seleniumhq.selenium</groupId>
-          <artifactId>selenium-api</artifactId>
-          <version>${version.selenium}</version>
+          <groupId>javax.xml.bind</groupId>
+          <artifactId>jaxb-api</artifactId>
+          <version>${version.jaxb-api}</version>
+          <scope>test</scope>
         </dependency>
 
         <dependency>
-          <groupId>org.seleniumhq.selenium</groupId>
-          <artifactId>selenium-support</artifactId>
-          <version>${version.selenium}</version>
+          <groupId>com.konghq</groupId>
+          <artifactId>unirest-java</artifactId>
+          <version>${version.unirest-java}</version>
+          <classifier>standalone</classifier>
+          <scope>provided</scope>
         </dependency>
-
-        <dependency>
-          <groupId>com.sun.jersey</groupId>
-          <artifactId>jersey-json</artifactId>
-          <version>${version.jersey-json}</version>
-        </dependency>
-
       </dependencies>
 
       <build>

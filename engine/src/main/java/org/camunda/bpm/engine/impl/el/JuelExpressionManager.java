@@ -19,21 +19,20 @@ package org.camunda.bpm.engine.impl.el;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.camunda.bpm.dmn.engine.impl.spi.el.ElProvider;
 import org.camunda.bpm.engine.delegate.VariableScope;
 import org.camunda.bpm.engine.impl.core.variable.scope.AbstractVariableScope;
 import org.camunda.bpm.engine.impl.dmn.el.ProcessEngineJuelElProvider;
-import org.camunda.bpm.engine.impl.javax.el.ArrayELResolver;
-import org.camunda.bpm.engine.impl.javax.el.CompositeELResolver;
-import org.camunda.bpm.engine.impl.javax.el.ELContext;
-import org.camunda.bpm.engine.impl.javax.el.ELResolver;
-import org.camunda.bpm.engine.impl.javax.el.ExpressionFactory;
-import org.camunda.bpm.engine.impl.javax.el.FunctionMapper;
-import org.camunda.bpm.engine.impl.javax.el.ListELResolver;
-import org.camunda.bpm.engine.impl.javax.el.MapELResolver;
-import org.camunda.bpm.engine.impl.javax.el.ValueExpression;
-import org.camunda.bpm.engine.impl.juel.ExpressionFactoryImpl;
+import org.camunda.bpm.impl.juel.jakarta.el.ArrayELResolver;
+import org.camunda.bpm.impl.juel.jakarta.el.CompositeELResolver;
+import org.camunda.bpm.impl.juel.jakarta.el.ELContext;
+import org.camunda.bpm.impl.juel.jakarta.el.ELResolver;
+import org.camunda.bpm.impl.juel.jakarta.el.ExpressionFactory;
+import org.camunda.bpm.impl.juel.jakarta.el.FunctionMapper;
+import org.camunda.bpm.impl.juel.jakarta.el.ListELResolver;
+import org.camunda.bpm.impl.juel.jakarta.el.MapELResolver;
+import org.camunda.bpm.impl.juel.jakarta.el.ValueExpression;
+import org.camunda.bpm.impl.juel.ExpressionFactoryImpl;
 import org.camunda.bpm.engine.impl.util.EnsureUtil;
 import org.camunda.bpm.engine.test.mock.MockElResolver;
 import org.camunda.bpm.engine.variable.context.VariableContext;
@@ -121,10 +120,12 @@ public class JuelExpressionManager implements ExpressionManager, ElProviderCompa
     ensureInitialized();
     ProcessEngineElContext elContext = new ProcessEngineElContext(functionMapper, elResolver);
     elContext.putContext(ExpressionFactory.class, expressionFactory);
-    elContext.putContext(VariableScope.class, variableScope);
+    if (variableScope != null) {
+      elContext.putContext(VariableScope.class, variableScope);
+    }
     return elContext;
   }
- 
+
   protected void ensureInitialized() {
     if (!initialized) {
       synchronized (this) {
@@ -160,14 +161,18 @@ public class JuelExpressionManager implements ExpressionManager, ElProviderCompa
 
     return elResolver;
   }
-  
+
   protected FunctionMapper createFunctionMapper() {
     FunctionMapper functionMapper = new FunctionMapper() {
       @Override
       public Method resolveFunction(String prefix, String localName) {
-        return functions.get(localName);
+        String fullName = localName;
+        if (prefix != null && !prefix.trim().isEmpty()) {
+          fullName = prefix + ":" + localName;
+        }
+        return functions.get(fullName);
       }
-      
+
     };
     return functionMapper;
   }

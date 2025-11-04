@@ -42,6 +42,9 @@ import org.camunda.bpm.engine.management.JobDefinitionQuery;
 import org.camunda.bpm.engine.management.MetricsQuery;
 import org.camunda.bpm.engine.management.ProcessDefinitionStatisticsQuery;
 import org.camunda.bpm.engine.management.SchemaLogQuery;
+import org.camunda.bpm.engine.management.SetJobRetriesBuilder;
+import org.camunda.bpm.engine.management.SetJobRetriesByJobsAsyncBuilder;
+import org.camunda.bpm.engine.management.SetJobRetriesByProcessAsyncBuilder;
 import org.camunda.bpm.engine.management.TableMetaData;
 import org.camunda.bpm.engine.management.TablePage;
 import org.camunda.bpm.engine.management.TablePageQuery;
@@ -840,6 +843,21 @@ public interface ManagementService {
   void setJobRetries(List<String> jobIds, int retries);
 
   /**
+   * Creates a fluent builder to set the number of retries on one or multiple {@link Job jobs}.
+   *
+   * Whenever the JobExecutor fails to execute a job, this value is decremented.
+   * When it hits zero, the job is supposed to be dead and not retried again.
+   * In that case, this method can be used to increase the number of retries.
+   *
+   * @see SetJobRetriesBuilder
+   *
+   * @param retries the number of retries
+   *
+   * @return the builder instance
+   */
+  SetJobRetriesBuilder setJobRetries(int retries);
+
+  /**
    * Sets the number of retries that jobs have left asynchronously.
    *
    * Whenever the JobExecutor fails to execute a job, this value is decremented.
@@ -940,6 +958,36 @@ public interface ManagementService {
                             ProcessInstanceQuery processInstanceQuery,
                             HistoricProcessInstanceQuery historicProcessInstanceQuery,
                             int retries);
+
+  /**
+   * Creates a fluent builder to set the number of retries for one or multiple jobs asynchronously.
+   *
+   * Whenever the JobExecutor fails to execute a job, this value is decremented.
+   * When it hits zero, the job is supposed to be dead and not retried again.
+   * In that case, this method can be used to increase the number of retries.
+   *
+   * @see SetJobRetriesByJobsAsyncBuilder
+   *
+   * @param retries number of retries
+   *
+   * @return the builder instance
+   */
+  SetJobRetriesByJobsAsyncBuilder setJobRetriesByJobsAsync(int retries);
+
+  /**
+   * Creates a fluent builder to set the number of retries for one or multiple jobs referenced by process asynchronously.
+   *
+   * Whenever the JobExecutor fails to execute a job, this value is decremented.
+   * When it hits zero, the job is supposed to be dead and not retried again.
+   * In that case, this method can be used to increase the number of retries.
+   *
+   * @see SetJobRetriesByProcessAsyncBuilder
+   *
+   * @param retries number of retries
+   *
+   * @return the builder instance
+   */
+  SetJobRetriesByProcessAsyncBuilder setJobRetriesByProcessAsync(int retries);
 
   /**
    * <p>
@@ -1371,23 +1419,19 @@ public interface ManagementService {
   SchemaLogQuery createSchemaLogQuery();
 
   /**
-   * Enable/disable sending telemetry data to Camunda
-   *
-   * @throws AuthorizationException
-   *          If the user is not a member of the group {@link Groups#CAMUNDA_ADMIN}.
+   * @deprecated The sending telemetry feature is removed.
+   * Please remove the method references as they are no longer needed.
    */
+  @Deprecated
   void toggleTelemetry(boolean enabled);
 
   /**
-   * Checks how sending telemetry data to Camunda is configured
-   * @return
-   *   <ul>
-   *     <li><code>null</code> if the configuration is not defined so far,
-   *     treated as <code>false</code> and no data is sent,</li>
-   *     <li><code>true</code> if the telemetry sending is enabled, and</li>
-   *     <li><code>false</code> if the telemetry is disabled explicitly.</li>
-   *   </ul>
+   * @deprecated The sending telemetry feature is removed.
+   * Please remove the method references as they are no longer needed.
+   * @return always <code>false</code>
+   *
    */
+  @Deprecated
   Boolean isTelemetryEnabled();
 
   /**
@@ -1397,8 +1441,6 @@ public interface ManagementService {
    * page in the Camunda docs.
    *
    * The engine collects information about multiple aspects of the installation.
-   * If telemetry is enabled this information is sent to Camunda. If telemetry
-   * is disabled, the engine still collects this information.
    *
    * @see <a href="https://docs.camunda.org/manual/latest/introduction/telemetry/#collected-data">Camunda Documentation: Telemetry</a>
    */

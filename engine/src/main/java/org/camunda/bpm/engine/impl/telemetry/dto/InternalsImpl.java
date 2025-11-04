@@ -16,6 +16,7 @@
  */
 package org.camunda.bpm.engine.impl.telemetry.dto;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -32,24 +33,22 @@ public class InternalsImpl implements Internals {
   public static final String SERIALIZED_APPLICATION_SERVER = "application-server";
   public static final String SERIALIZED_CAMUNDA_INTEGRATION = "camunda-integration";
   public static final String SERIALIZED_LICENSE_KEY = "license-key";
-  public static final String SERIALIZED_TELEMETRY_ENABLED = "telemetry-enabled";
+  public static final String SERIALIZED_DATA_COLLECTION_START_DATE = "data-collection-start-date";
 
   protected DatabaseImpl database;
   @SerializedName(value = SERIALIZED_APPLICATION_SERVER)
   protected ApplicationServerImpl applicationServer;
   @SerializedName(value = SERIALIZED_LICENSE_KEY)
   protected LicenseKeyDataImpl licenseKey;
-  protected Map<String, Command> commands;
   @SerializedName(value = SERIALIZED_CAMUNDA_INTEGRATION)
   protected Set<String> camundaIntegration;
-
+  @SerializedName(value = SERIALIZED_DATA_COLLECTION_START_DATE)
+  protected Date dataCollectionStartDate;
+  protected Map<String, Command> commands;
   protected Map<String, Metric> metrics;
   protected Set<String> webapps;
 
   protected JdkImpl jdk;
-
-  @SerializedName(value = SERIALIZED_TELEMETRY_ENABLED)
-  protected Boolean telemetryEnabled;
 
   public InternalsImpl() {
     this(null, null, null, null);
@@ -69,10 +68,11 @@ public class InternalsImpl implements Internals {
     this.camundaIntegration = internals.camundaIntegration == null ? null : new HashSet<>(internals.getCamundaIntegration());
     this.commands = new HashMap<>(internals.getCommands());
     this.metrics = internals.metrics == null ? null : new HashMap<>(internals.getMetrics());
-    this.telemetryEnabled = internals.telemetryEnabled;
     this.webapps = internals.webapps;
+    this.dataCollectionStartDate = internals.dataCollectionStartDate;
   }
 
+  @Override
   public DatabaseImpl getDatabase() {
     return database;
   }
@@ -81,6 +81,7 @@ public class InternalsImpl implements Internals {
     this.database = database;
   }
 
+  @Override
   public ApplicationServerImpl getApplicationServer() {
     return applicationServer;
   }
@@ -89,6 +90,16 @@ public class InternalsImpl implements Internals {
     this.applicationServer = applicationServer;
   }
 
+  @Override
+  public Date getDataCollectionStartDate() {
+    return dataCollectionStartDate;
+  }
+
+  public void setDataCollectionStartDate(Date dataCollectionStartDate) {
+    this.dataCollectionStartDate = dataCollectionStartDate;
+  }
+
+  @Override
   public Map<String, Command> getCommands() {
     return commands;
   }
@@ -105,6 +116,7 @@ public class InternalsImpl implements Internals {
     commands.put(commandName, new CommandImpl(count));
   }
 
+  @Override
   public Map<String, Metric> getMetrics() {
     return metrics;
   }
@@ -126,6 +138,7 @@ public class InternalsImpl implements Internals {
     this.metrics = other.metrics;
   }
 
+  @Override
   public JdkImpl getJdk() {
     return jdk;
   }
@@ -134,6 +147,7 @@ public class InternalsImpl implements Internals {
     this.jdk = jdk;
   }
 
+  @Override
   public Set<String> getCamundaIntegration() {
     return camundaIntegration;
   }
@@ -142,6 +156,7 @@ public class InternalsImpl implements Internals {
     this.camundaIntegration = camundaIntegration;
   }
 
+  @Override
   public LicenseKeyDataImpl getLicenseKey() {
     return licenseKey;
   }
@@ -150,14 +165,7 @@ public class InternalsImpl implements Internals {
     this.licenseKey = licenseKey;
   }
 
-  public Boolean isTelemetryEnabled() {
-    return telemetryEnabled;
-  }
-
-  public void setTelemetryEnabled(Boolean telemetryEnabled) {
-    this.telemetryEnabled = telemetryEnabled;
-  }
-
+  @Override
   public Set<String> getWebapps() {
     return webapps;
   }
@@ -165,5 +173,4 @@ public class InternalsImpl implements Internals {
   public void setWebapps(Set<String> webapps) {
     this.webapps = webapps;
   }
-
 }

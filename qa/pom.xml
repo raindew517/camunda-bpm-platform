@@ -5,13 +5,17 @@
   <groupId>org.camunda.bpm.qa</groupId>
 
   <packaging>pom</packaging>
+
+  <description>
+    Note: 7.24.0 is the last community edition release published on Maven Central. This library will not receive any new versions or releases. However, if you are interested in extended maintenance you could look into our enterprise edition. Get in touch with us: https://camunda.com/contact/
+  </description>
   <name>Camunda Platform - QA</name>
 
   <parent>
     <groupId>org.camunda.bpm</groupId>
     <artifactId>camunda-database-settings</artifactId>
     <relativePath>../database</relativePath>
-    <version>7.18.0-SNAPSHOT</version>
+    <version>7.24.0-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -22,7 +26,8 @@
     <mail.server.port>5025</mail.server.port>
 
     <!-- wildfly -->
-    <wildfly.runtime.location>../wildfly-runtime/target/server/wildfly-${version.wildfly}/</wildfly.runtime.location>
+    <wildfly.runtime.location>../wildfly-runtime/target/server/wildfly-${version.wildfly}</wildfly.runtime.location>
+    <wildfly26.runtime.location>../wildfly26-runtime/target/wildfly-${version.wildfly26}</wildfly26.runtime.location>
 
     <jboss.http.port>38080</jboss.http.port>
     <jboss.ajp.port>38009</jboss.ajp.port>
@@ -44,6 +49,7 @@
     <tomcat.server.port>48005</tomcat.server.port>
 
     <tomcat.runtime.location>../tomcat-runtime/target/server/apache-tomcat-${version.tomcat}</tomcat.runtime.location>
+    <tomcat9.runtime.location>../tomcat9-runtime/target/server/apache-tomcat-${version.tomcat9}</tomcat9.runtime.location>
 
   </properties>
 
@@ -72,18 +78,18 @@
       </activation>
       <modules>
         <module>wildfly-runtime</module>
+        <module>wildfly26-runtime</module>
         <module>tomcat-runtime</module>
-        <module>vanilla-runtimes/tomcat</module>
-        <module>vanilla-runtimes/wildfly</module>
+        <module>tomcat9-runtime</module>
         <module>integration-tests-webapps</module>
         <module>integration-tests-engine</module>
-        <module>test-db-upgrade</module>
         <module>test-db-util</module>
         <module>test-db-instance-migration</module>
         <module>test-db-rolling-update</module>
         <module>test-old-engine</module>
         <module>performance-tests-engine</module>
         <module>large-data-tests</module>
+        <module>integration-tests-engine-jakarta</module>
       </modules>
     </profile>
 
@@ -101,25 +107,31 @@
         <module>wildfly-runtime</module>
       </modules>
     </profile>
+    
+    <profile>
+      <id>wildfly26</id>
+      <modules>
+        <module>wildfly26-runtime</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>wildfly26-domain</id>
+      <modules>
+        <module>wildfly26-runtime</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>tomcat9</id>
+      <modules>
+        <module>tomcat9-runtime</module>
+      </modules>
+    </profile>
 
     <profile>
       <id>tomcat</id>
       <modules>
         <module>tomcat-runtime</module>
-      </modules>
-    </profile>
-
-    <profile>
-      <id>tomcat-vanilla</id>
-      <modules>
-        <module>vanilla-runtimes/tomcat</module>
-      </modules>
-    </profile>
-
-    <profile>
-      <id>wildfly-vanilla</id>
-      <modules>
-        <module>vanilla-runtimes/wildfly</module>
       </modules>
     </profile>
 
@@ -133,23 +145,16 @@
     </profile>
 
     <profile>
-      <id>webapps-integration-sa</id>
-      <modules>
-        <module>integration-tests-webapps</module>
-      </modules>
-    </profile>
-
-    <profile>
       <id>engine-integration</id>
       <modules>
         <module>integration-tests-engine</module>
       </modules>
     </profile>
-
+    
     <profile>
-      <id>upgrade-db</id>
+      <id>engine-integration-jakarta</id>
       <modules>
-        <module>test-db-upgrade</module>
+        <module>integration-tests-engine-jakarta</module>
       </modules>
     </profile>
 
@@ -174,6 +179,24 @@
       <modules>
         <module>test-old-engine</module>
       </modules>
+    </profile>
+
+    <profile>
+      <id>java11</id>
+      <activation>
+        <jdk>11</jdk>
+      </activation>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-framework-bom</artifactId>
+            <version>${version.spring.framework}</version>
+            <type>pom</type>
+            <scope>import</scope>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
     </profile>
   </profiles>
 

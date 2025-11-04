@@ -16,14 +16,14 @@
  */
 package org.camunda.bpm.spring.boot.starter.webapp.filter.headersec.it;
 
-import org.camunda.bpm.spring.boot.starter.webapp.filter.util.HeaderRule;
-import org.camunda.bpm.spring.boot.starter.webapp.filter.util.TestApplication;
+import org.camunda.bpm.spring.boot.starter.webapp.filter.util.HttpClientRule;
+import org.camunda.bpm.spring.boot.starter.webapp.filter.util.FilterTestApp;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,18 +32,18 @@ import static org.camunda.bpm.webapp.impl.security.filter.headersec.provider.imp
 import static org.camunda.bpm.webapp.impl.security.filter.headersec.provider.impl.ContentSecurityPolicyProvider.HEADER_NONCE_PLACEHOLDER;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = { TestApplication.class }, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = { FilterTestApp.class }, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class HttpHeaderSecurityDefaultsIT {
 
   @Rule
-  public HeaderRule headerRule;
+  public HttpClientRule httpClientRule;
 
   @LocalServerPort
   public int port;
 
   @Before
   public void assignRule() {
-    headerRule = new HeaderRule(port);
+    httpClientRule = new HttpClientRule(port);
   }
 
   @Test
@@ -51,10 +51,10 @@ public class HttpHeaderSecurityDefaultsIT {
     // given
 
     // when
-    headerRule.performRequest();
+    httpClientRule.performRequest();
 
     // then
-    assertThat(headerRule.getHeader("X-XSS-Protection")).isEqualTo("1; mode=block");
+    assertThat(httpClientRule.getHeader("X-XSS-Protection")).isEqualTo("1; mode=block");
   }
 
   @Test
@@ -62,11 +62,11 @@ public class HttpHeaderSecurityDefaultsIT {
     // given
 
     // when
-    headerRule.performRequest();
+    httpClientRule.performRequest();
 
     // then
     String expectedHeaderPattern = HEADER_DEFAULT_VALUE.replace(HEADER_NONCE_PLACEHOLDER, "'nonce-([-_a-zA-Z\\d]*)'");
-    assertThat(headerRule.getHeader(HEADER_NAME)).matches(expectedHeaderPattern);
+    assertThat(httpClientRule.getHeader(HEADER_NAME)).matches(expectedHeaderPattern);
   }
 
   @Test
@@ -74,10 +74,10 @@ public class HttpHeaderSecurityDefaultsIT {
     // given
 
     // when
-    headerRule.performRequest();
+    httpClientRule.performRequest();
 
     // then
-    assertThat(headerRule.getHeader("X-Content-Type-Options")).isEqualTo("nosniff");
+    assertThat(httpClientRule.getHeader("X-Content-Type-Options")).isEqualTo("nosniff");
   }
 
 }

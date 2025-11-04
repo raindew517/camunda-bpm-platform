@@ -16,14 +16,14 @@
  */
 package org.camunda.bpm.spring.boot.starter.webapp.filter.headersec.it.properties;
 
-import org.camunda.bpm.spring.boot.starter.webapp.filter.util.HeaderRule;
-import org.camunda.bpm.spring.boot.starter.webapp.filter.util.TestApplication;
+import org.camunda.bpm.spring.boot.starter.webapp.filter.util.HttpClientRule;
+import org.camunda.bpm.spring.boot.starter.webapp.filter.util.FilterTestApp;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -31,7 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = { TestApplication.class }, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = { FilterTestApp.class }, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
   "camunda.bpm.webapp.headerSecurity.xssProtectionDisabled=true",
   "camunda.bpm.webapp.headerSecurity.contentSecurityPolicyDisabled=true",
@@ -42,14 +42,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class HttpHeaderSecurityAbsenceIT {
 
   @Rule
-  public HeaderRule headerRule;
+  public HttpClientRule httpClientRule;
 
   @LocalServerPort
   public int port;
 
   @Before
   public void assignRule() {
-    headerRule = new HeaderRule(port);
+    httpClientRule = new HttpClientRule(port);
   }
 
   @Test
@@ -57,10 +57,10 @@ public class HttpHeaderSecurityAbsenceIT {
     // given
 
     // when
-    headerRule.performRequest();
+    httpClientRule.performRequest();
 
     // then
-    assertThat(headerRule.headerExists("X-XSS-Protection")).isFalse();
+    assertThat(httpClientRule.headerExists("X-XSS-Protection")).isFalse();
   }
 
   @Test
@@ -68,10 +68,10 @@ public class HttpHeaderSecurityAbsenceIT {
     // given
 
     // when
-    headerRule.performRequest();
+    httpClientRule.performRequest();
 
     // then
-    assertThat(headerRule.headerExists("Content-Security-Policy")).isFalse();
+    assertThat(httpClientRule.headerExists("Content-Security-Policy")).isFalse();
   }
 
   @Test
@@ -79,10 +79,10 @@ public class HttpHeaderSecurityAbsenceIT {
     // given
 
     // when
-    headerRule.performRequest();
+    httpClientRule.performRequest();
 
     // then
-    assertThat(headerRule.headerExists("X-Content-Type-Options")).isFalse();
+    assertThat(httpClientRule.headerExists("X-Content-Type-Options")).isFalse();
   }
 
   @Test
@@ -90,10 +90,10 @@ public class HttpHeaderSecurityAbsenceIT {
     // given
 
     // when
-    headerRule.performRequest();
+    httpClientRule.performRequest();
 
     // then
-    assertThat(headerRule.headerExists("Strict-Transport-Security")).isFalse();
+    assertThat(httpClientRule.headerExists("Strict-Transport-Security")).isFalse();
   }
 
 }

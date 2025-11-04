@@ -194,27 +194,63 @@ public class JobExecutorLogger extends ProcessEngineLogger {
   }
 
   public void infoJobExecutorDoesNotHandleHistoryCleanupJobs(ProcessEngineConfigurationImpl config) {
-    Long jobExecutorPriorityRangeMin = config.getJobExecutorPriorityRangeMin();
-    Long jobExecutorPriorityRangeMax = config.getJobExecutorPriorityRangeMax();
     logInfo("029",
         "JobExecutor is configured for priority range {}-{}. History cleanup jobs will not be handled, because they are outside the priority range ({}).",
-        jobExecutorPriorityRangeMin == null ? 0 : jobExecutorPriorityRangeMin,
-        jobExecutorPriorityRangeMax == null ? Long.MAX_VALUE : jobExecutorPriorityRangeMax,
+        config.getJobExecutorPriorityRangeMin(),
+        config.getJobExecutorPriorityRangeMax(),
         config.getHistoryCleanupJobPriority());
   }
 
   public void infoJobExecutorDoesNotHandleBatchJobs(ProcessEngineConfigurationImpl config) {
-    Long jobExecutorPriorityRangeMin = config.getJobExecutorPriorityRangeMin();
-    Long jobExecutorPriorityRangeMax = config.getJobExecutorPriorityRangeMax();
     logInfo("030",
         "JobExecutor is configured for priority range {}-{}. Batch jobs will not be handled, because they are outside the priority range ({}).",
-        jobExecutorPriorityRangeMin == null ? 0 : jobExecutorPriorityRangeMin,
-        jobExecutorPriorityRangeMax == null ? Long.MAX_VALUE : jobExecutorPriorityRangeMax,
+        config.getJobExecutorPriorityRangeMin(),
+        config.getJobExecutorPriorityRangeMax(),
         config.getBatchJobPriority());
+  }
+
+  public void debugFailedJobListenerSkipped(String jobId) {
+    logDebug("031", "Failed job listener skipped for job {} because it's been already re-acquired", jobId);
   }
 
   public ProcessEngineException jobExecutorPriorityRangeException(String reason) {
     return new ProcessEngineException(exceptionMessage("031", "Invalid configuration for job executor priority range. Reason: {}", reason));
+  }
+
+  public void failedAcquisitionLocks(String processEngine, AcquiredJobs acquiredJobs) {
+    logDebug("033", "Jobs failed to Lock during Acquisition of jobs for the process engine '{}' : {}", processEngine,
+        acquiredJobs.getNumberOfJobsFailedToLock());
+  }
+
+  public void jobsToAcquire(String processEngine, int numJobsToAcquire) {
+    logDebug("034", "Attempting to acquire {} jobs for the process engine '{}'", numJobsToAcquire, processEngine);
+  }
+
+  public void rejectedJobExecutions(String processEngine, int numJobsRejected) {
+    logDebug("035", "Jobs execution rejections for the process engine '{}' : {}", processEngine, numJobsRejected);
+  }
+
+  public void availableJobExecutionThreads(String processEngine, int numAvailableThreads) {
+    logDebug("036", "Available job execution threads for the process engine '{}' : {}", processEngine,
+        numAvailableThreads);
+  }
+
+  public void currentJobExecutions(String processEngine, int numExecutions) {
+    logDebug("037", "Jobs currently in execution for the process engine '{}' : {}", processEngine, numExecutions);
+  }
+
+  public void numJobsInQueue(String processEngine, int numJobsInQueue, int maxQueueSize) {
+    logDebug("038",
+        "Jobs currently in queue to be executed for the process engine '{}' : {} (out of the max queue size : {})",
+        processEngine, numJobsInQueue, maxQueueSize);
+  }
+
+  public void availableThreadsCalculationError() {
+    logDebug("039", "Arithmetic exception occurred while computing remaining available thread count for logging.");
+  }
+
+  public void totalQueueCapacityCalculationError() {
+    logDebug("040", "Arithmetic exception occurred while computing total queue capacity for logging.");
   }
 
 }

@@ -17,9 +17,9 @@
 package org.camunda.bpm.identity.impl.ldap;
 
 
-import javax.naming.directory.SearchControls;
 import java.util.HashMap;
 import java.util.Map;
+import javax.naming.directory.SearchControls;
 
 
 /**
@@ -30,10 +30,13 @@ import java.util.Map;
  */
 public class LdapConfiguration {
 
+  public static String LDAP_QUERY_WILDCARD = "*";
+  public static String DB_QUERY_WILDCARD = "%";
+
   protected String initialContextFactory = "com.sun.jndi.ldap.LdapCtxFactory";
   protected String securityAuthentication = "simple";
 
-  protected Map<String, String> contextProperties = new HashMap<String, String>();
+  protected Map<String, String> contextProperties = new HashMap<>();
 
   protected String serverUrl;
   protected String managerDn = "";
@@ -66,6 +69,10 @@ public class LdapConfiguration {
   protected boolean allowAnonymousLogin = false;
 
   protected boolean authorizationCheckEnabled = true;
+
+  protected Integer pageSize = null; // null => disabled
+
+  protected boolean passwordCheckCatchAuthenticationException = true;
 
   // getters / setters //////////////////////////////////////
 
@@ -282,6 +289,22 @@ public class LdapConfiguration {
 
   public void setAuthorizationCheckEnabled(boolean authorizationCheckEnabled) {
     this.authorizationCheckEnabled = authorizationCheckEnabled;
+  }
+
+  public Integer getPageSize() {
+    return pageSize;
+  }
+
+  public void setPageSize(Integer pageSize) {
+    this.pageSize = pageSize;
+  }
+
+  public boolean isPasswordCheckCatchAuthenticationException() {
+    return passwordCheckCatchAuthenticationException;
+  }
+
+  public void setPasswordCheckCatchAuthenticationException(boolean passwordCheckCatchAuthenticationException) {
+    this.passwordCheckCatchAuthenticationException = passwordCheckCatchAuthenticationException;
   }
 
 }

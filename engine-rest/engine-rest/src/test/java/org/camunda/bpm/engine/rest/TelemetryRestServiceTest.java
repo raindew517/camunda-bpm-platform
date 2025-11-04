@@ -16,9 +16,19 @@
  */
 package org.camunda.bpm.engine.rest;
 
-import org.camunda.bpm.engine.AuthorizationException;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+
+import javax.ws.rs.core.Response.Status;
+
 import org.camunda.bpm.engine.ManagementService;
-import org.camunda.bpm.engine.rest.dto.telemetry.TelemetryDataDto;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
 import org.camunda.bpm.engine.rest.util.container.TestContainerRule;
 import org.camunda.bpm.engine.telemetry.ApplicationServer;
@@ -32,20 +42,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.restassured.http.ContentType;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-
-import javax.ws.rs.core.Response.Status;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class TelemetryRestServiceTest extends AbstractRestServiceTest {
 
@@ -83,60 +81,6 @@ public class TelemetryRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldEnableTelemetry() {
-    Map<String, Object> requestBody = new HashMap<>();
-    requestBody.put("enableTelemetry", true);
-
-    given()
-      .contentType(POST_JSON_CONTENT_TYPE)
-      .body(requestBody)
-    .then()
-      .expect()
-        .statusCode(Status.NO_CONTENT.getStatusCode())
-    .when()
-      .post(TELEMETRY_CONFIG_URL);
-
-    verify(managementServiceMock).toggleTelemetry(true);
-  }
-
-  @Test
-  public void shouldThrowAuthorizationExceptionOnEnablingTelemetry() {
-    String message = "Required admin authenticated group or user.";
-    doThrow(new AuthorizationException(message)).when(managementServiceMock).toggleTelemetry(anyBoolean());
-
-    Map<String, Object> requestBody = new HashMap<>();
-    requestBody.put("enableTelemetry", true);
-
-    given()
-      .contentType(POST_JSON_CONTENT_TYPE)
-      .body(requestBody)
-    .then()
-      .expect()
-        .statusCode(Status.FORBIDDEN.getStatusCode())
-        .contentType(ContentType.JSON)
-        .body("type", equalTo(AuthorizationException.class.getSimpleName()))
-        .body("message", equalTo(message))
-    .when()
-      .post(TELEMETRY_CONFIG_URL);
-  }
-
-  @Test
-  public void shouldFetchEnabledTelemetryConfiguration() {
-    when(managementServiceMock.isTelemetryEnabled()).thenReturn(true);
-
-    given()
-      .contentType(POST_JSON_CONTENT_TYPE)
-    .then()
-      .expect()
-        .statusCode(Status.OK.getStatusCode())
-        .body("enableTelemetry", equalTo(true))
-    .when()
-      .get(TELEMETRY_CONFIG_URL);
-
-    verify(managementServiceMock).isTelemetryEnabled();
-  }
-
-  @Test
   public void shouldFetchDisabledTelemetryConfiguration() {
     when(managementServiceMock.isTelemetryEnabled()).thenReturn(false);
 
@@ -146,41 +90,6 @@ public class TelemetryRestServiceTest extends AbstractRestServiceTest {
       .expect()
         .statusCode(Status.OK.getStatusCode())
         .body("enableTelemetry", equalTo(false))
-    .when()
-      .get(TELEMETRY_CONFIG_URL);
-
-    verify(managementServiceMock).isTelemetryEnabled();
-  }
-
-  @Test
-  public void shouldFetchEmptyTelemetryConfiguration() {
-    when(managementServiceMock.isTelemetryEnabled()).thenReturn(null);
-
-    given()
-      .contentType(POST_JSON_CONTENT_TYPE)
-    .then()
-      .expect()
-        .statusCode(Status.OK.getStatusCode())
-        .body("enableTelemetry", equalTo(null))
-    .when()
-      .get(TELEMETRY_CONFIG_URL);
-
-    verify(managementServiceMock).isTelemetryEnabled();
-  }
-
-  @Test
-  public void shouldThrowAuthorizationExceptionOnFetchingTelemetryConfig() {
-    String message = "Required admin authenticated group or user.";
-    doThrow(new AuthorizationException(message)).when(managementServiceMock).isTelemetryEnabled();
-
-    given()
-      .contentType(POST_JSON_CONTENT_TYPE)
-    .then()
-      .expect()
-        .statusCode(Status.FORBIDDEN.getStatusCode())
-        .contentType(ContentType.JSON)
-        .body("type", equalTo(AuthorizationException.class.getSimpleName()))
-        .body("message", equalTo(message))
     .when()
       .get(TELEMETRY_CONFIG_URL);
 
@@ -220,6 +129,7 @@ public class TelemetryRestServiceTest extends AbstractRestServiceTest {
         .body("product.internals.license-key.unlimited", equalTo(MockProvider.EXAMPLE_TELEMETRY_LICENSE_UNLIMITED))
         .body("product.internals.license-key.valid-until", equalTo(MockProvider.EXAMPLE_TELEMETRY_LICENSE_VALID_UNTIL))
         .body("product.internals.camunda-integration[0]", equalTo("spring-boot"))
+        .body("product.internals.data-collection-start-date", equalTo(MockProvider.EXAMPLE_TELEMETRY_DATA_COLLECTION_START_DATE))
     .when()
       .get(TELEMETRY_DATA_URL);
 

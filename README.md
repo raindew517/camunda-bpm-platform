@@ -1,13 +1,16 @@
 # Camunda Platform 7 - The open source BPMN platform
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.camunda.bpm/camunda-parent/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.camunda.bpm/camunda-parent) [![camunda manual latest](https://img.shields.io/badge/manual-latest-brown.svg)](https://docs.camunda.org/manual/latest/) [![License](https://img.shields.io/github/license/camunda/camunda-bpm-platform?color=blue&logo=apache)](https://github.com/camunda/camunda-bpm-platform/blob/master/LICENSE) [![Forum](https://img.shields.io/badge/forum-camunda-green)](https://forum.camunda.org/)
+[![Maven Central Version](https://img.shields.io/maven-central/v/org.camunda.bpm/camunda-parent)](https://central.sonatype.com/artifact/org.camunda.bpm/camunda-parent) [![camunda manual latest](https://img.shields.io/badge/manual-7.24-brown.svg)](https://docs.camunda.org/manual/7.24/) [![License](https://img.shields.io/github/license/camunda/camunda-bpm-platform?color=blue&logo=apache)](https://github.com/camunda/camunda-bpm-platform/blob/master/LICENSE) [![Forum](https://img.shields.io/badge/forum-camunda-green)](https://forum.camunda.org/)
 
-Camunda Platform 7 is a flexible framework for workflow and process automation. It's core is a native BPMN 2.0 process engine that runs inside the Java Virtual Machine. It can be embedded inside any Java application and any Runtime Container. It integrates with Java EE 6 and is a perfect match for the Spring Framework. On top of the process engine, you can choose from a stack of tools for human workflow management, operations & monitoring.
+> [!Caution]
+> **Camunda 7 Community Edition (CE)** is **End of Life (EoL)**, and the Enterprise Edition entered long-term support, receiving only maintenance improvements as well as bug and security fixes. Looking ahead, [Camunda 8](https://github.com/camunda/camunda) is the successor to this product, so we strongly encourage you to explore it and contribute there instead. You can also read more about the timeline of [Camunda 7 Enterprise End of Life](https://camunda.com/blog/2025/02/camunda-7-enterprise-end-of-life-extension/) (EoL). 
+
+Camunda Platform 7 is a flexible framework for workflow and process automation. Its core is a native BPMN 2.0 process engine that runs inside the Java Virtual Machine. It can be embedded inside any Java application and any Runtime Container. It integrates with Java EE 6 and is a perfect match for the Spring Framework. On top of the process engine, you can choose from a stack of tools for human workflow management, operations and monitoring.
 
 - Web Site: https://www.camunda.org/
 - Getting Started: https://docs.camunda.org/get-started/
 - User Forum: https://forum.camunda.org/
-- Issue Tracker: https://app.camunda.com/jira
+- Issue Tracker: https://github.com/camunda/camunda-bpm-platform/issues
 - Contribution Guidelines: https://camunda.org/contribute/
 
 ## Components
@@ -53,7 +56,7 @@ Most of the components that make up the platform can even be completely embedded
 
 ## Contributing
 
-Please see our [contribution guidelines](CONTRIBUTING.md).
+Please see our [contribution guidelines](CONTRIBUTING.md) for how to raise issues and how to contribute code to our project.
 
 ## Tests
 

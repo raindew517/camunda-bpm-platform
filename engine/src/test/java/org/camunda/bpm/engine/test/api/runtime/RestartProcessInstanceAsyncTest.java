@@ -31,6 +31,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.ManagementService;
@@ -39,6 +40,7 @@ import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.batch.Batch;
+import org.camunda.bpm.engine.batch.history.HistoricBatch;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.history.HistoricProcessInstanceQuery;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
@@ -46,6 +48,7 @@ import org.camunda.bpm.engine.impl.cfg.multitenancy.TenantIdProvider;
 import org.camunda.bpm.engine.impl.cfg.multitenancy.TenantIdProviderCaseInstanceContext;
 import org.camunda.bpm.engine.impl.cfg.multitenancy.TenantIdProviderHistoricDecisionInstanceContext;
 import org.camunda.bpm.engine.impl.cfg.multitenancy.TenantIdProviderProcessInstanceContext;
+import org.camunda.bpm.engine.impl.persistence.entity.HistoricProcessInstanceEntity;
 import org.camunda.bpm.engine.impl.util.ClockUtil;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
@@ -79,6 +82,8 @@ import org.junit.rules.RuleChain;
  */
 @RequiredHistoryLevel(ProcessEngineConfiguration.HISTORY_FULL)
 public class RestartProcessInstanceAsyncTest {
+
+  protected static final Date TEST_DATE = new Date(1457326800000L);
 
   protected ProcessEngineRule engineRule = new ProvidedProcessEngineRule();
   protected ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
@@ -242,6 +247,46 @@ public class RestartProcessInstanceAsyncTest {
     restartedProcessInstance = restartedProcessInstances.get(1);
     restartedTask = engineRule.getTaskService().createTaskQuery().processInstanceId(restartedProcessInstance.getId()).active().singleResult();
     Assert.assertEquals(task2.getTaskDefinitionKey(), restartedTask.getTaskDefinitionKey());
+  }
+
+  @Test
+  public void shouldAssignRestartProcessInstanceIdOnlyToRestartedProcessInstances() {
+    // given process instances 1 and 2
+    ProcessDefinition processDefinition = testRule.deployAndGetDefinition(ProcessModels.TWO_TASKS_PROCESS);
+
+    var processInstance1 = runtimeService.startProcessInstanceByKey("Process");
+    var processInstance2 = runtimeService.startProcessInstanceByKey("Process");
+
+    runtimeService.deleteProcessInstance(processInstance1.getId(), "test");
+    runtimeService.deleteProcessInstance(processInstance2.getId(), "test");
+
+    // when process instance 1 is restarted
+    Batch batch = runtimeService.restartProcessInstances(processDefinition.getId())
+            .startBeforeActivity("userTask1")
+            .processInstanceIds(processInstance1.getId())
+            .executeAsync();
+
+    helper.completeSeedJobs(batch);
+
+    helper.getExecutionJobs(batch).forEach(j -> assertEquals(processDefinition.getDeploymentId(), j.getDeploymentId()));
+    helper.completeExecutionJobs(batch);
+    helper.completeMonitorJobs(batch);
+
+    // then the restartedProcessInstanceId should be populated only for the restarted process instance 1
+    var restartedProcessInstance = runtimeService.createProcessInstanceQuery()
+            .active()
+            .singleResult();
+
+    var historicProcessInstance1 = (HistoricProcessInstanceEntity) historyService.createHistoricProcessInstanceQuery()
+            .processInstanceId(restartedProcessInstance.getId())
+            .singleResult();
+
+    var historicProcessInstance2 = (HistoricProcessInstanceEntity) historyService.createHistoricProcessInstanceQuery()
+            .processInstanceId(processInstance2.getId())
+            .singleResult();
+
+    assertThat(historicProcessInstance1.getRestartedProcessInstanceId()).isEqualTo(processInstance1.getId());
+    assertThat(historicProcessInstance2.getRestartedProcessInstanceId()).isNull();
   }
 
   @Test
@@ -552,8 +597,7 @@ public class RestartProcessInstanceAsyncTest {
 
   @Test
   public void testMonitorJobPollingForCompletionDueDateSet() {
-    Date testDate = new Date(1457326800000L);
-    ClockUtil.setCurrentTime(testDate);
+    ClockUtil.setCurrentTime(TEST_DATE);
     processEngineConfiguration.setEnsureJobDueDateNotNull(true);
 
     // given
@@ -572,20 +616,19 @@ public class RestartProcessInstanceAsyncTest {
       .executeAsync();
 
     // when the seed job creates the monitor job
-    Date createDate = testDate;
     helper.completeSeedJobs(batch);
 
     // then the monitor job has the create date as due date set
     Job monitorJob = helper.getMonitorJob(batch);
     assertNotNull(monitorJob);
-    assertEquals(testDate, monitorJob.getDuedate());
+    assertEquals(TEST_DATE, monitorJob.getDuedate());
 
     // when the monitor job is executed
     helper.executeMonitorJob(batch);
 
     // then the monitor job has a due date of the default batch poll time
     monitorJob = helper.getMonitorJob(batch);
-    Date dueDate = helper.addSeconds(createDate, 30);
+    Date dueDate = helper.addSeconds(TEST_DATE, 30);
     assertEquals(dueDate, monitorJob.getDuedate());
   }
 
@@ -1118,6 +1161,34 @@ public class RestartProcessInstanceAsyncTest {
     // clear
     engineRule.getProcessEngineConfiguration()
         .setInvocationsPerBatchJobByBatchType(new HashMap<>());
+  }
+
+  @Test
+  public void shouldSetExecutionStartTimeInBatchAndHistory() {
+    // given
+    ClockUtil.setCurrentTime(TEST_DATE);
+
+    ProcessDefinition processDefinition = testRule.deployAndGetDefinition(ProcessModels.TWO_TASKS_PROCESS);
+    ProcessInstance processInstance1 = runtimeService.createProcessInstanceById(processDefinition.getId())
+        .startBeforeActivity("userTask1")
+        .execute();
+    runtimeService.deleteProcessInstance(processInstance1.getId(), "test");
+    Batch batch = runtimeService.restartProcessInstances(processDefinition.getId())
+        .startAfterActivity("userTask2")
+        .processInstanceIds(processInstance1.getId())
+        .executeAsync();
+    helper.executeSeedJob(batch);
+    List<Job> executionJobs = helper.getExecutionJobs(batch);
+
+    // when
+    helper.executeJob(executionJobs.get(0));
+
+    // then
+    HistoricBatch historicBatch = historyService.createHistoricBatchQuery().singleResult();
+    batch = managementService.createBatchQuery().singleResult();
+
+    Assertions.assertThat(batch.getExecutionStartTime()).isEqualToIgnoringMillis(TEST_DATE);
+    Assertions.assertThat(historicBatch.getExecutionStartTime()).isEqualToIgnoringMillis(TEST_DATE);
   }
 
   protected void assertBatchCreated(Batch batch, int processInstanceCount) {

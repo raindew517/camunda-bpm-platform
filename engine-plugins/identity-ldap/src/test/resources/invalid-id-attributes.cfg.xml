@@ -21,6 +21,7 @@
     <property name="jobExecutorActivate" value="false" />
     
     <property name="createDiagramOnDeploy" value="true" />
+    <property name="enforceHistoryTimeToLive" value="false" />
     
     <property name="processEnginePlugins">
       <list>
@@ -34,7 +35,7 @@
   
     <property name="serverUrl" value="ldap://localhost:${ldap.server.port}/" />
     <property name="managerDn" value="uid=daniel,ou=office-berlin,o=camunda,c=org" />
-    <property name="managerPassword" value="daniel" />    
+    <property name="managerPassword" value="daniel" />
     <property name="baseDn" value="o=camunda,c=org" />
     
     <property name="userSearchBase" value="" />

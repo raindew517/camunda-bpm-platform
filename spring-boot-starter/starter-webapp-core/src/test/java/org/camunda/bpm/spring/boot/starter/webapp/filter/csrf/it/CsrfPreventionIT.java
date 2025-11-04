@@ -17,13 +17,13 @@
 package org.camunda.bpm.spring.boot.starter.webapp.filter.csrf.it;
 
 import org.camunda.bpm.spring.boot.starter.property.WebappProperty;
-import org.camunda.bpm.spring.boot.starter.webapp.filter.util.HeaderRule;
-import org.camunda.bpm.spring.boot.starter.webapp.filter.util.TestApplication;
+import org.camunda.bpm.spring.boot.starter.webapp.filter.util.HttpClientRule;
+import org.camunda.bpm.spring.boot.starter.webapp.filter.util.FilterTestApp;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -34,23 +34,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = { TestApplication.class }, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+@SpringBootTest(classes = { FilterTestApp.class }, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {"server.error.include-message=always"})
 @DirtiesContext
 public class CsrfPreventionIT {
 
   @Rule
-  public HeaderRule headerRule = new HeaderRule();
+  public HttpClientRule httpClientRule = new HttpClientRule();
 
   @LocalServerPort
   public int port;
 
   @Test
   public void shouldSetCookieWebapp() {
-    headerRule.performRequest("http://localhost:" + port + "/camunda/app/tasklist/default");
+    httpClientRule.performRequest("http://localhost:" + port + "/camunda/app/tasklist/default");
 
-    String xsrfCookieValue = headerRule.getXsrfCookieValue();
-    String xsrfTokenHeader = headerRule.getXsrfTokenHeader();
+    String xsrfCookieValue = httpClientRule.getXsrfCookie();
+    String xsrfTokenHeader = httpClientRule.getXsrfTokenHeader();
 
     assertThat(xsrfCookieValue).matches("XSRF-TOKEN=[A-Z0-9]{32};" +
         "Path=" + WebappProperty.DEFAULT_APP_PATH + ";SameSite=Lax");
@@ -61,10 +61,10 @@ public class CsrfPreventionIT {
 
   @Test
   public void shouldSetCookieWebappRest() {
-    headerRule.performRequest("http://localhost:" + port + "/camunda/api/engine/engine/");
+    httpClientRule.performRequest("http://localhost:" + port + "/camunda/api/engine/engine/");
 
-    String xsrfCookieValue = headerRule.getXsrfCookieValue();
-    String xsrfTokenHeader = headerRule.getXsrfTokenHeader();
+    String xsrfCookieValue = httpClientRule.getXsrfCookie();
+    String xsrfTokenHeader = httpClientRule.getXsrfTokenHeader();
 
     assertThat(xsrfCookieValue).matches("XSRF-TOKEN=[A-Z0-9]{32};" +
         "Path=" + WebappProperty.DEFAULT_APP_PATH + ";SameSite=Lax");
@@ -78,7 +78,7 @@ public class CsrfPreventionIT {
     // given
 
     // when
-    URLConnection urlConnection = headerRule.performPostRequest("http://localhost:" + port +
+    URLConnection urlConnection = httpClientRule.performPostRequest("http://localhost:" + port +
             "/camunda/api/admin/auth/user/default/login/welcome", "Content-Type",
         "application/x-www-form-urlencoded");
 
@@ -88,8 +88,8 @@ public class CsrfPreventionIT {
     } catch (IOException e) {
       // then
       assertThat(e).hasMessageContaining("Server returned HTTP response code: 403 for URL");
-      assertThat(headerRule.getHeaderXsrfToken()).isEqualTo("Required");
-      assertThat(headerRule.getErrorResponseContent()).contains("CSRFPreventionFilter: Token provided via HTTP Header is absent/empty.");
+      assertThat(httpClientRule.getHeaderXsrfToken()).isEqualTo("Required");
+      assertThat(httpClientRule.getErrorResponseContent()).contains("CSRFPreventionFilter: Token provided via HTTP Header is absent/empty.");
     }
 
   }

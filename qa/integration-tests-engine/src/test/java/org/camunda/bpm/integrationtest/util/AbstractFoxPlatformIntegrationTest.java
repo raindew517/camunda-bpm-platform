@@ -34,7 +34,6 @@ import org.camunda.bpm.engine.impl.jobexecutor.JobExecutor;
 import org.camunda.bpm.engine.impl.util.ClockUtil;
 import org.camunda.bpm.engine.runtime.Job;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Before;
 
@@ -45,6 +44,8 @@ import java.util.logging.Logger;
 
 
 public abstract class AbstractFoxPlatformIntegrationTest {
+
+  protected static final long JOBS_WAIT_TIMEOUT_MS = 20_000L;
 
   protected Logger logger = Logger.getLogger(AbstractFoxPlatformIntegrationTest.class.getName());
 
@@ -64,7 +65,7 @@ public abstract class AbstractFoxPlatformIntegrationTest {
 
   public static WebArchive initWebArchiveDeployment(String name, String processesXmlPath) {
     WebArchive archive = ShrinkWrap.create(WebArchive.class, name)
-              .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
+              .addAsWebInfResource("org/camunda/bpm/integrationtest/beans.xml", "beans.xml")
               .addAsLibraries(DeploymentHelper.getEngineCdi())
               .addAsResource(processesXmlPath, "META-INF/processes.xml")
               .addClass(AbstractFoxPlatformIntegrationTest.class)
@@ -74,7 +75,6 @@ public abstract class AbstractFoxPlatformIntegrationTest {
 
     return archive;
   }
-
   public static WebArchive initWebArchiveDeployment(String name) {
     return initWebArchiveDeployment(name, "META-INF/processes.xml");
   }
@@ -82,6 +82,7 @@ public abstract class AbstractFoxPlatformIntegrationTest {
   public static WebArchive initWebArchiveDeployment() {
     return initWebArchiveDeployment("test.war");
   }
+
 
 
   @Before
@@ -102,7 +103,7 @@ public abstract class AbstractFoxPlatformIntegrationTest {
   }
 
   public void waitForJobExecutorToProcessAllJobs() {
-    waitForJobExecutorToProcessAllJobs(12000);
+    waitForJobExecutorToProcessAllJobs(JOBS_WAIT_TIMEOUT_MS);
   }
 
   public void waitForJobExecutorToProcessAllJobs(long maxMillisToWait) {

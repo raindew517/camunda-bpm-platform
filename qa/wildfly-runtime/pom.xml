@@ -4,13 +4,32 @@
   <artifactId>camunda-qa-wildfly-runtime</artifactId>
   <packaging>jar</packaging>
 
+  <description>
+    Note: 7.24.0 is the last community edition release published on Maven Central. This library will not receive any new versions or releases. However, if you are interested in extended maintenance you could look into our enterprise edition. Get in touch with us: https://camunda.com/contact/
+  </description>
+
   <name>Camunda Platform - QA Wildfly Test Runtime</name>
 
   <parent>
     <groupId>org.camunda.bpm.qa</groupId>
     <artifactId>camunda-qa</artifactId>
-    <version>7.18.0-SNAPSHOT</version>
+    <version>7.24.0-SNAPSHOT</version>
   </parent>
+
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-beans</artifactId>
+        <version>${version.spring.framework6}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.camunda.bpm</groupId>
+        <artifactId>camunda-engine</artifactId>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <!--
@@ -40,7 +59,11 @@
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
-
+    <dependency>
+      <artifactId>spring-beans</artifactId>
+      <groupId>org.springframework</groupId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -156,11 +179,11 @@
                 <configuration>
                   <rules>
                     <requireJavaVersion>
-                      <version>[1.8,)</version>
+                      <version>[11,)</version>
                       <message>
                         *****************************************************************************************************
                         *                                                                                                   *
-                        *               You must use at least JDK 1.8 to start Camunda Platform Wildfly!!!                  *
+                        *               You must use at least JDK 11 to start Camunda Platform Wildfly!!!                  *
                         *                                                                                                   *
                         *****************************************************************************************************
                       </message>

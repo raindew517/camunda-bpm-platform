@@ -16,25 +16,24 @@
  */
 package org.camunda.bpm.engine.impl.util;
 
+import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.DB2;
+import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.H2;
+import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.MSSQL;
+import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.MYSQL;
+import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.ORACLE;
+import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.POSTGRES;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.SQLException;
 import java.util.function.Supplier;
-
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.executor.BatchExecutorException;
 import org.camunda.bpm.engine.ProcessEngineException;
+import org.camunda.bpm.engine.ProcessEnginePersistenceException;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
 import org.camunda.bpm.engine.repository.ResourceType;
-
-import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.CRDB;
-import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.DB2;
-import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.H2;
-import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.MARIADB_MYSQL;
-import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.ORACLE;
-import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.POSTGRES;
-import static org.camunda.bpm.engine.impl.util.ExceptionUtil.DEADLOCK_CODES.MSSQL;
 
 /**
  * @author Roman Smirnov
@@ -45,6 +44,8 @@ public class ExceptionUtil {
   public static final String PERSISTENCE_EXCEPTION_MESSAGE = "An exception occurred in the " +
       "persistence layer. Please check the server logs for a detailed message and the entire " +
       "exception stack trace.";
+
+  public static final String PERSISTENCE_CONNECTION_ERROR_CLASS = "08";
 
   public static String getExceptionStacktrace(Throwable exception) {
     StringWriter stringWriter = new StringWriter();
@@ -142,13 +143,17 @@ public class ExceptionUtil {
 
   public static boolean checkValueTooLongException(SQLException sqlException) {
     String message = sqlException.getMessage();
+    if (message != null) {
+      message = message.toLowerCase();
+    } else {
+      return false;
+    }
     return message.contains("too long") ||
         message.contains("too large") ||
-        message.contains("TOO LARGE") ||
-        message.contains("ORA-01461") ||
-        message.contains("ORA-01401") ||
+        message.contains("ora-01461") ||
+        message.contains("ora-01401") ||
         message.contains("data would be truncated") ||
-        message.contains("SQLCODE=-302, SQLSTATE=22001");
+        message.contains("sqlcode=-302, sqlstate=22001");
   }
 
   public static boolean checkValueTooLongException(ProcessEngineException genericPersistenceException) {
@@ -169,47 +174,56 @@ public class ExceptionUtil {
     }
 
     String message = sqlException.getMessage();
+    if (message != null) {
+      message = message.toLowerCase();
+    } else {
+      return false;
+    }
+
     return message.contains("constraint") ||
         message.contains("violat") ||
-        message.toLowerCase().contains("duplicate") ||
-        message.contains("ORA-00001") ||
-        message.contains("SQLCODE=-803, SQLSTATE=23505");
+        message.contains("duplicate") ||
+        message.contains("ora-00001") ||
+        message.contains("sqlcode=-803, sqlstate=23505");
   }
 
-  public static boolean checkForeignKeyConstraintViolation(PersistenceException persistenceException, boolean skipPostgres) {
+  public static boolean checkForeignKeyConstraintViolation(PersistenceException persistenceException) {
     SQLException sqlException = unwrapException(persistenceException);
 
     if (sqlException == null) {
       return false;
     }
 
-    return checkForeignKeyConstraintViolation(sqlException, skipPostgres);
+    return checkForeignKeyConstraintViolation(sqlException);
   }
 
-  public static boolean checkForeignKeyConstraintViolation(SQLException sqlException, boolean skipPostgres) {
-    String message = sqlException.getMessage().toLowerCase();
+  public static boolean checkForeignKeyConstraintViolation(SQLException sqlException) {
+    String message = sqlException.getMessage();
+    if (message != null) {
+      message = message.toLowerCase();
+    } else {
+      return false;
+    }
+
     String sqlState = sqlException.getSQLState();
     int errorCode = sqlException.getErrorCode();
 
-    // PostgreSQL doesn't allow for a proper check
-    if ("23503".equals(sqlState) && errorCode == 0) {
-      return !skipPostgres;
-    } else {
-      // SqlServer
-      return message.contains("foreign key constraint") ||
-          "23000".equals(sqlState) && errorCode == 547 ||
-          // MySql & MariaDB & PostgreSQL
-          "23000".equals(sqlState) && errorCode == 1452 ||
-          // Oracle & H2
-          message.contains("integrity constraint") ||
-          // Oracle
-          "23000".equals(sqlState) && errorCode == 2291 ||
-          // H2
-          "23506".equals(sqlState) && errorCode == 23506 ||
-          // DB2
-          "23503".equals(sqlState) && errorCode == -530 ||
-          "23504".equals(sqlState) && errorCode == -532;
-    }
+    // SqlServer & PostgreSQL
+    return message.contains("foreign key constraint") ||
+        "23000".equals(sqlState) && errorCode == 547 ||
+        // MySql & PostgreSQL
+        "23000".equals(sqlState) && errorCode == 1452 ||
+        // Oracle & H2
+        message.contains("integrity constraint") ||
+        // Oracle
+        "23000".equals(sqlState) && errorCode == 2291 ||
+        // H2
+        "23506".equals(sqlState) && errorCode == 23506 ||
+        // DB2
+        "23503".equals(sqlState) && errorCode == -530 ||
+        "23504".equals(sqlState) && errorCode == -532 ||
+        // PostgreSQL
+        "23503".equals(sqlState) && errorCode == 0;
   }
 
   public static boolean checkVariableIntegrityViolation(PersistenceException persistenceException) {
@@ -219,11 +233,17 @@ public class ExceptionUtil {
       return false;
     }
 
-    String message = sqlException.getMessage().toLowerCase();
-    String sqlState = sqlException.getSQLState().toUpperCase();
+    String message = sqlException.getMessage();
+    if (message != null) {
+      message = message.toLowerCase();
+    } else {
+      return false;
+    }
+
+    String sqlState = sqlException.getSQLState();
     int errorCode = sqlException.getErrorCode();
 
-    // MySQL & MariaDB
+    // MySQL
     return (message.contains("act_uniq_variable") && "23000".equals(sqlState) && errorCode == 1062)
         // PostgreSQL
         || (message.contains("act_uniq_variable") && "23505".equals(sqlState) && errorCode == 0)
@@ -235,49 +255,12 @@ public class ExceptionUtil {
         || (message.contains("act_uniq_variable") && "23505".equals(sqlState) && errorCode == 23505);
   }
 
-  public static boolean checkCrdbTransactionRetryException(Throwable exception) {
-    SQLException sqlException = null;
-
-    if (exception instanceof PersistenceException) {
-      sqlException = unwrapException((PersistenceException) exception);
-
-    } else if (exception instanceof ProcessEngineException) {
-      sqlException = unwrapException((ProcessEngineException) exception);
-
-    } else {
-      return false;
-
-    }
-
-    if (sqlException == null) {
-      return false;
-    }
-
-    return checkCrdbTransactionRetryException(sqlException);
-  }
-
-  public static boolean checkCrdbTransactionRetryException(SQLException sqlException) {
-    String errorMessage = sqlException.getMessage();
-    int errorCode = sqlException.getErrorCode();
-    if ((errorCode == 40001 || errorMessage != null)) {
-      errorMessage = errorMessage.toLowerCase();
-      return (errorMessage.contains("restart transaction") || errorMessage.contains("retry txn"))
-          // TX retry errors with RETRY_COMMIT_DEADLINE_EXCEEDED are handled
-          // as a ProcessEngineException (cause: Process engine persistence exception)
-          // due to a long-running transaction
-          && !errorMessage.contains("retry_commit_deadline_exceeded");
-    }
-    return false;
-  }
-
   public enum DEADLOCK_CODES {
-
-    MARIADB_MYSQL(1213, "40001"),
+    MYSQL(1213, "40001"),
     MSSQL(1205, "40001"),
     DB2(-911, "40001"),
     ORACLE(60, "61000"),
     POSTGRES(0, "40P01"),
-    CRDB(0, "40001"),
     H2(40001, "40001");
 
     protected final int errorCode;
@@ -309,15 +292,14 @@ public class ExceptionUtil {
     } else {
       return false;
     }
-    
+
     int errorCode = sqlException.getErrorCode();
 
-    return MARIADB_MYSQL.equals(errorCode, sqlState) ||
+    return MYSQL.equals(errorCode, sqlState) ||
         MSSQL.equals(errorCode, sqlState) ||
         DB2.equals(errorCode, sqlState) ||
         ORACLE.equals(errorCode, sqlState) ||
         POSTGRES.equals(errorCode, sqlState) ||
-        CRDB.equals(errorCode, sqlState) ||
         H2.equals(errorCode, sqlState);
   }
 
@@ -349,15 +331,13 @@ public class ExceptionUtil {
   public static <T> T doWithExceptionWrapper(Supplier<T> supplier) {
     try {
       return supplier.get();
-
     } catch (Exception ex) {
       throw wrapPersistenceException(ex);
-
     }
   }
 
-  public static ProcessEngineException wrapPersistenceException(Exception ex) {
-    return new ProcessEngineException(PERSISTENCE_EXCEPTION_MESSAGE, ex);
+  public static ProcessEnginePersistenceException wrapPersistenceException(Exception ex) {
+    return new ProcessEnginePersistenceException(PERSISTENCE_EXCEPTION_MESSAGE, ex);
   }
 
 }

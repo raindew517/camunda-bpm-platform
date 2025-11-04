@@ -22,7 +22,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = ParsePropertiesHelper.TestConfig.class)
@@ -37,12 +37,14 @@ public abstract class ParsePropertiesHelper {
 
   protected MetricsProperty metrics;
   protected WebappProperty webapp;
+  protected RestApiProperty restApiProperty;
   protected JobExecutionProperty jobExecution;
 
   @PostConstruct
   public void init() {
     metrics = properties.getMetrics();
     webapp = properties.getWebapp();
+    restApiProperty = properties.getRestApi();
     jobExecution = properties.getJobExecution();
   }
 }

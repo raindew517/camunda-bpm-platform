@@ -2,6 +2,10 @@
 
   <modelVersion>4.0.0</modelVersion>
 
+  <description>
+    Note: 7.24.0 is the last community edition release published on Maven Central. This library will not receive any new versions or releases. However, if you are interested in extended maintenance you could look into our enterprise edition. Get in touch with us: https://camunda.com/contact/
+  </description>
+
   <name>Camunda Platform - engine</name>
   <artifactId>camunda-engine</artifactId>
 
@@ -9,7 +13,7 @@
     <groupId>org.camunda.bpm</groupId>
     <artifactId>camunda-database-settings</artifactId>
     <relativePath>../database</relativePath>
-    <version>7.18.0-SNAPSHOT</version>
+    <version>7.24.0-SNAPSHOT</version>
   </parent>
 
   <dependencyManagement>
@@ -26,7 +30,15 @@
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-framework-bom</artifactId>
-        <version>${version.spring.framework}</version>
+        <version>${version.spring.framework6}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>jakarta.platform</groupId>
+        <artifactId>jakarta.jakartaee-bom</artifactId>
+        <version>${version.jakarta-ee-spec}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -49,21 +61,14 @@
     </dependency>
 
     <dependency>
+      <groupId>org.camunda.bpm.juel</groupId>
+      <artifactId>camunda-juel</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.camunda.bpm.dmn</groupId>
       <artifactId>camunda-engine-dmn</artifactId>
       <exclusions>
-        <exclusion>
-          <groupId>de.odysseus.juel</groupId>
-          <artifactId>juel-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>de.odysseus.juel</groupId>
-          <artifactId>juel-spi</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>de.odysseus.juel</groupId>
-          <artifactId>juel-impl</artifactId>
-        </exclusion>
         <!-- these exclusions are needed when building with Maven >= 3.3
           see CAM-11822 for details -->
         <exclusion>
@@ -115,28 +120,11 @@
       <artifactId>gson</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.camunda.connect</groupId>
-      <artifactId>camunda-connect-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.camunda.connect</groupId>
-      <artifactId>camunda-connect-connectors-all</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
     <!-- provided dependencies -->
 
     <dependency>
       <groupId>org.apache.ant</groupId>
       <artifactId>ant</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hibernate.javax.persistence</groupId>
-      <artifactId>hibernate-jpa-2.0-api</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -157,11 +145,39 @@
       <artifactId>jboss-javaee-web-6.0</artifactId>
       <type>pom</type>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jboss.spec.javax.xml.bind</groupId>
+          <artifactId>jboss-jaxb-api_2.2_spec</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.jboss.spec.javax.servlet.jsp</groupId>
+          <artifactId>jboss-jsp-api_2.2_spec</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.transaction</groupId>
+      <artifactId>jakarta.transaction-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.ejb</groupId>
+      <artifactId>jakarta.ejb-api</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.tomcat</groupId>
-      <artifactId>catalina</artifactId>
+      <artifactId>tomcat-catalina</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -184,6 +200,12 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>com.cronutils</groupId>
+      <artifactId>cron-utils</artifactId>
+      <version>${version.cronutils}</version>
+    </dependency>
+
     <!-- test dependencies  -->
 
     <dependency>
@@ -199,8 +221,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.openjpa</groupId>
-      <artifactId>openjpa</artifactId>
+      <groupId>commons-collections</groupId>
+      <artifactId>commons-collections</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -265,7 +287,7 @@
       <artifactId>jcl-over-slf4j</artifactId>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jul-to-slf4j</artifactId>
@@ -279,7 +301,14 @@
     </dependency>
 
     <dependency>
-      <groupId>org.codehaus.groovy</groupId>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>28.2-jre</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.groovy</groupId>
       <artifactId>groovy-jsr223</artifactId>
       <scope>test</scope>
     </dependency>
@@ -308,6 +337,19 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.camunda.bpm</groupId>
+      <artifactId>camunda-bpm-archunit</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.h-thurow</groupId>
+      <artifactId>simple-jndi</artifactId>
+      <version>0.24.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 
@@ -329,10 +371,10 @@
     </camunda.artifact>
     <camunda.osgi.export.pkg>
       !${camunda.artifact}.engine.variable.*,
-      ${camunda.artifact};${camunda.osgi.version};-noimport:=true,
-      ${camunda.artifact}.application.*;${camunda.osgi.version};-noimport:=true,
-      ${camunda.artifact}.container.*;${camunda.osgi.version};-noimport:=true,
-      ${camunda.artifact}.engine.*;${camunda.osgi.version};-noimport:=true
+      ${camunda.artifact},
+      ${camunda.artifact}.application.*,
+      ${camunda.artifact}.container.*,
+      ${camunda.artifact}.engine.*
     </camunda.osgi.export.pkg>
     <camunda.osgi.import.additional>
       !com.google.gson.*,
@@ -381,6 +423,7 @@
           <include>**/*camunda.cfg.xml</include>
           <include>**/camunda.cfg.*.xml</include>
           <include>testconfig.properties</include>
+          <include>database.properties</include>
           <include>**/testcontainers.properties</include>
         </includes>
       </testResource>
@@ -400,6 +443,9 @@
             <exclude>**/*TestCase.java</exclude>
             <exclude>%regex[.*(${test.excludes}).*Test.*.class]</exclude>
           </excludes>
+          <dependenciesToScan>
+            <dependency>org.camunda.bpm:camunda-bpm-archunit</dependency>
+          </dependenciesToScan>
         </configuration>
       </plugin>
       <plugin>
@@ -444,17 +490,15 @@
             <excludes>
               <exclude>org.camunda.bpm.model:*</exclude>
               <exclude>org.camunda.bpm.dmn:*</exclude>
+              <exclude>org.camunda.bpm.juel:*</exclude>
               <exclude>org.camunda.commons:*</exclude>
-              <exclude>org.camunda.connect:*</exclude>
               <exclude>org.camunda.feel:*</exclude>
 
               <exclude>org.springframework:*</exclude>
               <exclude>org.slf4j:*</exclude>
-              <exclude>org.apache.commons:*</exclude>
               <exclude>com.sun.mail:*</exclude>
               <exclude>javax.activation:*</exclude>
               <exclude>org.mybatis:mybatis:*</exclude>
-              <exclude>commons-logging:*</exclude>
               <exclude>joda-time:*</exclude>
             </excludes>
           </artifactSet>
@@ -462,6 +506,10 @@
             <relocation>
               <pattern>com.google.gson</pattern>
               <shadedPattern>camundajar.impl.com.google.gson</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.cronutils</pattern>
+              <shadedPattern>camundajar.impl.com.cronutils</shadedPattern>
             </relocation>
           </relocations>
           <transformers>
@@ -612,13 +660,6 @@
     </profile>
 
     <profile>
-      <id>cfgAuthorizationCheckRevokesAlways</id>
-      <properties>
-        <authorizationCheckRevokes>always</authorizationCheckRevokes>
-      </properties>
-    </profile>
-
-    <profile>
       <id>cfgJdbcBatchProcessingOff</id>
       <properties>
         <jdbcBatchProcessing>false</jdbcBatchProcessing>
@@ -661,41 +702,6 @@
               <excludes combine.children="append">
                 <exclude>**/CompetingMessageCorrelationTest.java</exclude>
               </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>mariadb</id>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <failIfNoTests>false</failIfNoTests>
-              <trimStackTrace>false</trimStackTrace>
-              <redirectTestOutputToFile>true</redirectTestOutputToFile>
-              <excludes combine.children="append">
-                <exclude>**/CompetingMessageCorrelationTest.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>cockroachdb</id>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <failIfNoTests>false</failIfNoTests>
-              <trimStackTrace>false</trimStackTrace>
-              <redirectTestOutputToFile>true</redirectTestOutputToFile>
             </configuration>
           </plugin>
         </plugins>
@@ -758,17 +764,6 @@
     </profile>
 
     <profile>
-      <id>wls-compatibility</id>
-      <dependencies>
-        <dependency>
-          <groupId>joda-time</groupId>
-          <artifactId>joda-time</artifactId>
-          <version>1.2.1</version>
-        </dependency>
-      </dependencies>
-    </profile>
-
-    <profile>
       <id>check-plugins</id>
       <dependencies>
         <dependency>
@@ -786,6 +781,16 @@
         <dependency>
           <groupId>org.camunda.connect</groupId>
           <artifactId>camunda-connect-connectors-all</artifactId>
+          <exclusions>
+            <exclusion>
+              <groupId>org.camunda.connect</groupId>
+              <artifactId>camunda-connect-http-client</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.camunda.connect</groupId>
+              <artifactId>camunda-connect-soap-http-client</artifactId>
+            </exclusion>
+          </exclusions>
         </dependency>
       </dependencies>
       <build>
@@ -864,7 +869,6 @@
                 <exclude>**/HistoryCleanupDisabledOnBootstrapTest.java</exclude>
                 <exclude>**/LoginAttemptsTest.java</exclude>
                 <exclude>**/ConcurrentHistoryCleanupUpdateOfFailingJobTest.java</exclude>
-                <exclude>**/TelemetryTaskWorkerMetricsTest.java</exclude>
               </excludes>
             </configuration>
           </plugin>
@@ -873,7 +877,7 @@
     </profile>
 
     <profile>
-      <id>java15</id>
+     <id>exclude-post-jdk15-tests</id>
       <activation>
         <jdk>[15,)</jdk>
       </activation>
@@ -942,6 +946,24 @@
      <properties>
       <test.excludes>bpmn|cmmn</test.excludes>
      </properties>
+    </profile>
+
+    <profile>
+      <id>java11</id>
+      <activation>
+        <jdk>11</jdk>
+      </activation>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-framework-bom</artifactId>
+            <version>${version.spring.framework}</version>
+            <type>pom</type>
+            <scope>import</scope>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
     </profile>
 
   </profiles>

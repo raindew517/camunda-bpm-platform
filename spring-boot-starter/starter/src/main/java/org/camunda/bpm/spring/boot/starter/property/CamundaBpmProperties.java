@@ -130,12 +130,6 @@ public class CamundaBpmProperties {
   private EventingProperty eventing = new EventingProperty();
 
   /**
-   * JPA configuration
-   */
-  @NestedConfigurationProperty
-  private JpaProperty jpa = new JpaProperty();
-
-  /**
    * job execution configuration
    */
   @NestedConfigurationProperty
@@ -146,6 +140,12 @@ public class CamundaBpmProperties {
    */
   @NestedConfigurationProperty
   private WebappProperty webapp = new WebappProperty();
+
+  /**
+   * REST API configuration
+   */
+  @NestedConfigurationProperty
+  private RestApiProperty restApi = new RestApiProperty();
 
   @NestedConfigurationProperty
   private AuthorizationProperty authorization = new AuthorizationProperty();
@@ -239,14 +239,6 @@ public class CamundaBpmProperties {
     this.eventing = eventing;
   }
 
-  public JpaProperty getJpa() {
-    return jpa;
-  }
-
-  public void setJpa(JpaProperty jpa) {
-    this.jpa = jpa;
-  }
-
   public JobExecutionProperty getJobExecution() {
     return jobExecution;
   }
@@ -261,6 +253,14 @@ public class CamundaBpmProperties {
 
   public void setWebapp(WebappProperty webapp) {
     this.webapp = webapp;
+  }
+
+  public RestApiProperty getRestApi() {
+    return restApi;
+  }
+
+  public void setRestApi(RestApiProperty restApi) {
+    this.restApi = restApi;
   }
 
   public AuthorizationProperty getAuthorization() {
@@ -358,9 +358,9 @@ public class CamundaBpmProperties {
       .add("licenseFile=" + licenseFile)
       .add("metrics=" + metrics)
       .add("database=" + database)
-      .add("jpa=" + jpa)
       .add("jobExecution=" + jobExecution)
       .add("webapp=" + webapp)
+      .add("restApi=" + restApi)
       .add("authorization=" + authorization)
       .add("genericProperties=" + genericProperties)
       .add("adminUser=" + adminUser)

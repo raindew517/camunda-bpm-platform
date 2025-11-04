@@ -122,17 +122,20 @@
 
     <@lib.property
         name = "camundaFormRef"
-        type = "object"
-        additionalProperties = true
+        type = "ref"
         dto = "CamundaFormRef"
-        desc = "A reference to a specific version of a Camunda Form."
-    />
+        desc = "A reference to a specific version of a Camunda Form."/>
 
     <@lib.property
         name = "tenantId"
         type = "string"
-        last = true
         desc = "If not `null`, the tenant id of the task." />
+
+    <@lib.property
+        name = "taskState"
+        type = "string"
+        desc = "The task's state."
+        last = true />
 
 </@lib.dto>
 </#macro>

@@ -31,13 +31,14 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-
 import org.assertj.core.api.Assertions;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.ManagementService;
+import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.batch.Batch;
+import org.camunda.bpm.engine.batch.history.HistoricBatch;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.impl.batch.BatchSeedJobHandler;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
@@ -58,13 +59,13 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
+import org.camunda.bpm.engine.test.RequiredHistoryLevel;
 import org.camunda.bpm.engine.test.api.runtime.migration.MigrationTestRule;
 import org.camunda.bpm.engine.test.api.runtime.migration.models.ProcessModels;
 import org.camunda.bpm.engine.test.bpmn.multiinstance.DelegateEvent;
 import org.camunda.bpm.engine.test.bpmn.multiinstance.DelegateExecutionListener;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
 import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
-import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -387,7 +388,6 @@ public class BatchMigrationTest {
   }
 
   @Test
-  @RequiredDatabase(excludes = DbSqlSessionFactory.CRDB)
   public void testMigrationJobsExecutionByJobExecutorWithAuthorizationEnabledAndTenant() {
     ProcessEngineConfigurationImpl processEngineConfiguration = engineRule.getProcessEngineConfiguration();
 
@@ -400,30 +400,6 @@ public class BatchMigrationTest {
       testRule.waitForJobExecutorToProcessAllJobs();
 
       // then all process instances were migrated
-      assertEquals(0, helper.countSourceProcessInstances());
-      assertEquals(10, helper.countTargetProcessInstances());
-
-    } finally {
-      processEngineConfiguration.setAuthorizationEnabled(false);
-    }
-  }
-
-  @Test
-  @RequiredDatabase(includes = DbSqlSessionFactory.CRDB)
-  public void testMigrationJobsExecutionByJobExecutorWithAuthorizationEnabledAndTenantUsesCockroachDB() {
-    ProcessEngineConfigurationImpl processEngineConfiguration = engineRule.getProcessEngineConfiguration();
-
-    processEngineConfiguration.setAuthorizationEnabled(true);
-
-    try {
-      Batch batch = helper.migrateProcessInstancesAsyncForTenant(10, "someTenantId");
-      helper.completeSeedJobs(batch);
-
-      // extend waiting time for CRDB since it takes longer to process all the jobs there
-      // see CAM-12239 for more details
-      testRule.waitForJobExecutorToProcessAllJobs(30000L);
-
-      // then all process instances where migrated
       assertEquals(0, helper.countSourceProcessInstances());
       assertEquals(10, helper.countTargetProcessInstances());
 
@@ -947,6 +923,26 @@ public class BatchMigrationTest {
     configuration.setInvocationsPerBatchJobByBatchType(new HashMap<>());
   }
 
+  @Test
+  @RequiredHistoryLevel(ProcessEngineConfiguration.HISTORY_FULL)
+  public void shouldSetExecutionStartTimeInBatchAndHistory() {
+    // given
+    ClockUtil.setCurrentTime(TEST_DATE);
+    Batch batch = helper.migrateProcessInstancesAsync(15);
+    helper.executeSeedJob(batch);
+    List<Job> executionJobs = helper.getExecutionJobs(batch);
+
+    // when
+    helper.executeJob(executionJobs.get(0));
+
+    // then
+    HistoricBatch historicBatch = historyService.createHistoricBatchQuery().singleResult();
+    batch = managementService.createBatchQuery().singleResult();
+
+    Assertions.assertThat(batch.getExecutionStartTime()).isEqualToIgnoringMillis(TEST_DATE);
+    Assertions.assertThat(historicBatch.getExecutionStartTime()).isEqualToIgnoringMillis(TEST_DATE);
+  }
+
   protected void assertBatchCreated(Batch batch, int processInstanceCount) {
     assertNotNull(batch);
     assertNotNull(batch.getId());
@@ -964,6 +960,7 @@ public class BatchMigrationTest {
       this.byteArrayId = byteArrayId;
     }
 
+    @Override
     public ByteArrayEntity execute(CommandContext commandContext) {
       return (ByteArrayEntity) commandContext.getDbEntityManager()
         .selectOne("selectByteArray", byteArrayId);

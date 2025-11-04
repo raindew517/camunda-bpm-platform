@@ -19,7 +19,6 @@ package org.camunda.bpm.integrationtest.functional.scriptengine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import org.camunda.bpm.engine.runtime.Job;
 import org.camunda.bpm.integrationtest.util.AbstractFoxPlatformIntegrationTest;
 import org.camunda.bpm.integrationtest.util.DeploymentHelper;
 import org.camunda.bpm.integrationtest.util.TestContainer;
@@ -27,7 +26,6 @@ import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.OperateOnDeployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,7 +39,7 @@ public class GroovyAsyncScriptExecutionTest extends AbstractFoxPlatformIntegrati
       "  xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\r\n" +
       "  xmlns:camunda=\"http://camunda.org/schema/1.0/bpmn\"\r\n" +
       "  targetNamespace=\"Examples\">\r\n" +
-      "  <process id=\"process\" isExecutable=\"true\">\r\n" +
+      "  <process id=\"process\" isExecutable=\"true\" camunda:historyTimeToLive=\"P180D\">\r\n" +
       "    <startEvent id=\"theStart\" />\r\n" +
       "    <sequenceFlow id=\"flow1\" sourceRef=\"theStart\" targetRef=\"theScriptTask\" />\r\n" +
       "    <scriptTask id=\"theScriptTask\" name=\"Execute script\" scriptFormat=\"groovy\" camunda:asyncBefore=\"true\">\r\n" +
@@ -57,7 +55,7 @@ public class GroovyAsyncScriptExecutionTest extends AbstractFoxPlatformIntegrati
   @Deployment(name="clientDeployment")
   public static WebArchive clientDeployment() {
     WebArchive deployment = ShrinkWrap.create(WebArchive.class, "client.war")
-            .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
+            .addAsWebInfResource("org/camunda/bpm/integrationtest/beans.xml", "beans.xml")
             .addClass(AbstractFoxPlatformIntegrationTest.class)
             .addAsLibraries(DeploymentHelper.getEngineCdi());
     TestContainer.addContainerSpecificResourcesForNonPa(deployment);

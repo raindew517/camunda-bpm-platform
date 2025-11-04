@@ -16,25 +16,22 @@
  */
 package org.camunda.bpm.engine.rest.dto.externaltask;
 
-import java.util.ArrayList;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import java.util.function.Consumer;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.externaltask.ExternalTaskQuery;
 import org.camunda.bpm.engine.rest.dto.AbstractQueryDto;
 import org.camunda.bpm.engine.rest.dto.CamundaQueryParam;
-import org.camunda.bpm.engine.rest.dto.converter.BooleanConverter;
-import org.camunda.bpm.engine.rest.dto.converter.DateConverter;
-import org.camunda.bpm.engine.rest.dto.converter.StringListConverter;
-import org.camunda.bpm.engine.rest.dto.converter.StringSetConverter;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.bpm.engine.rest.dto.converter.LongConverter;
+import org.camunda.bpm.engine.rest.dto.VariableQueryParameterDto;
+import org.camunda.bpm.engine.rest.dto.converter.*;
+import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 
 /**
  * @author Thorben Lindhauer
@@ -42,25 +39,16 @@ import org.camunda.bpm.engine.rest.dto.converter.LongConverter;
  */
 public class ExternalTaskQueryDto extends AbstractQueryDto<ExternalTaskQuery> {
 
-  public static final String SORT_BY_ID_VALUE = "id";
-  public static final String SORT_BY_LOCK_EXPIRATION_TIME = "lockExpirationTime";
-  public static final String SORT_BY_PROCESS_INSTANCE_ID = "processInstanceId";
-  public static final String SORT_BY_PROCESS_DEFINITION_ID = "processDefinitionId";
-  public static final String SORT_BY_PROCESS_DEFINITION_KEY = "processDefinitionKey";
-  public static final String SORT_BY_TENANT_ID = "tenantId";
-  public static final String SORT_BY_PRIORITY = "taskPriority";
-
-  public static final List<String> VALID_SORT_BY_VALUES;
-  static {
-    VALID_SORT_BY_VALUES = new ArrayList<>();
-    VALID_SORT_BY_VALUES.add(SORT_BY_ID_VALUE);
-    VALID_SORT_BY_VALUES.add(SORT_BY_LOCK_EXPIRATION_TIME);
-    VALID_SORT_BY_VALUES.add(SORT_BY_PROCESS_INSTANCE_ID);
-    VALID_SORT_BY_VALUES.add(SORT_BY_PROCESS_DEFINITION_ID);
-    VALID_SORT_BY_VALUES.add(SORT_BY_PROCESS_DEFINITION_KEY);
-    VALID_SORT_BY_VALUES.add(SORT_BY_TENANT_ID);
-    VALID_SORT_BY_VALUES.add(SORT_BY_PRIORITY);
-  }
+  public static final Map<String, Consumer<ExternalTaskQuery>> SORT_METHODS_BY_FIELD = Map.of(
+      "id", ExternalTaskQuery::orderById,
+      "lockExpirationTime", ExternalTaskQuery::orderByLockExpirationTime,
+      "processInstanceId", ExternalTaskQuery::orderByProcessInstanceId,
+      "processDefinitionId", ExternalTaskQuery::orderByProcessDefinitionId,
+      "processDefinitionKey", ExternalTaskQuery::orderByProcessDefinitionKey,
+      "tenantId", ExternalTaskQuery::orderByTenantId,
+      "taskPriority", ExternalTaskQuery::orderByPriority,
+      "createTime", ExternalTaskQuery::orderByCreateTime
+  );
 
   protected String externalTaskId;
   protected Set<String> externalTaskIds;
@@ -74,7 +62,11 @@ public class ExternalTaskQueryDto extends AbstractQueryDto<ExternalTaskQuery> {
   protected String executionId;
   protected String processInstanceId;
   protected List<String> processInstanceIdIn;
+  protected String processDefinitionKey;
+  protected String[] processDefinitionKeyIn;
   protected String processDefinitionId;
+  protected String processDefinitionName;
+  protected String processDefinitionNameLike;
   protected Boolean active;
   protected Boolean suspended;
   protected Boolean withRetriesLeft;
@@ -83,6 +75,10 @@ public class ExternalTaskQueryDto extends AbstractQueryDto<ExternalTaskQuery> {
   protected List<String> tenantIds;
   protected Long priorityHigherThanOrEquals;
   protected Long priorityLowerThanOrEquals;
+  protected Boolean variableNamesIgnoreCase;
+  protected Boolean variableValuesIgnoreCase;
+
+  private List<VariableQueryParameterDto> processVariables;
 
   public ExternalTaskQueryDto() {
   }
@@ -155,9 +151,29 @@ public class ExternalTaskQueryDto extends AbstractQueryDto<ExternalTaskQuery> {
     return processDefinitionId;
   }
 
+  @CamundaQueryParam("processDefinitionKey")
+  public void setProcessDefinitionKey(String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  @CamundaQueryParam(value = "processDefinitionKeyIn", converter = StringArrayConverter.class)
+  public void setProcessDefinitionKeyIn(String[] processDefinitionKeyIn) {
+    this.processDefinitionKeyIn = processDefinitionKeyIn;
+  }
+
   @CamundaQueryParam("processDefinitionId")
   public void setProcessDefinitionId(String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
+  }
+
+  @CamundaQueryParam("processDefinitionName")
+  public void setProcessDefinitionName(String processDefinitionName) {
+    this.processDefinitionName = processDefinitionName;
+  }
+
+  @CamundaQueryParam("processDefinitionNameLike")
+  public void setProcessDefinitionNameLike(String processDefinitionNameLike) {
+    this.processDefinitionNameLike = processDefinitionNameLike;
   }
 
   @CamundaQueryParam(value = "active", converter = BooleanConverter.class)
@@ -194,6 +210,21 @@ public class ExternalTaskQueryDto extends AbstractQueryDto<ExternalTaskQuery> {
     this.priorityHigherThanOrEquals = priorityHigherThanOrEquals;
   }
 
+  @CamundaQueryParam(value = "variableNamesIgnoreCase", converter = BooleanConverter.class)
+  public void setVariableNamesIgnoreCase(Boolean variableNamesCaseInsensitive) {
+    this.variableNamesIgnoreCase = variableNamesCaseInsensitive;
+  }
+
+  @CamundaQueryParam(value ="variableValuesIgnoreCase", converter = BooleanConverter.class)
+  public void setVariableValuesIgnoreCase(Boolean variableValuesCaseInsensitive) {
+    this.variableValuesIgnoreCase = variableValuesCaseInsensitive;
+  }
+
+  @CamundaQueryParam(value = "processVariables", converter = VariableListConverter.class)
+  public void setProcessVariables(List<VariableQueryParameterDto> processVariables) {
+    this.processVariables = processVariables;
+  }
+
   @CamundaQueryParam(value="priorityLowerThanOrEquals", converter = LongConverter.class)
   public void setPriorityLowerThanOrEquals(Long priorityLowerThanOrEquals) {
     this.priorityLowerThanOrEquals = priorityLowerThanOrEquals;
@@ -201,7 +232,7 @@ public class ExternalTaskQueryDto extends AbstractQueryDto<ExternalTaskQuery> {
 
   @Override
   protected boolean isValidSortByValue(String value) {
-    return VALID_SORT_BY_VALUES.contains(value);
+    return SORT_METHODS_BY_FIELD.containsKey(value);
   }
 
   @Override
@@ -247,8 +278,20 @@ public class ExternalTaskQueryDto extends AbstractQueryDto<ExternalTaskQuery> {
     if (processInstanceIdIn != null && !processInstanceIdIn.isEmpty()) {
       query.processInstanceIdIn(processInstanceIdIn.toArray(new String[0]));
     }
+    if (processDefinitionKey != null) {
+      query.processDefinitionKey(processDefinitionKey);
+    }
+    if (processDefinitionKeyIn != null && processDefinitionKeyIn.length > 0) {
+      query.processDefinitionKeyIn(processDefinitionKeyIn);
+    }
     if (processDefinitionId != null) {
       query.processDefinitionId(processDefinitionId);
+    }
+    if (processDefinitionName != null) {
+      query.processDefinitionName(processDefinitionName);
+    }
+    if (processDefinitionNameLike != null) {
+      query.processDefinitionNameLike(processDefinitionNameLike);
     }
     if (active != null && active) {
       query.active();
@@ -268,6 +311,38 @@ public class ExternalTaskQueryDto extends AbstractQueryDto<ExternalTaskQuery> {
     if (noRetriesLeft != null && noRetriesLeft) {
       query.noRetriesLeft();
     }
+    if(variableValuesIgnoreCase != null && variableValuesIgnoreCase) {
+      query.matchVariableValuesIgnoreCase();
+    }
+    if(variableNamesIgnoreCase != null && variableNamesIgnoreCase) {
+      query.matchVariableNamesIgnoreCase();
+    }
+    if (processVariables != null) {
+      for (VariableQueryParameterDto variableQueryParam : processVariables) {
+        String variableName = variableQueryParam.getName();
+        String op = variableQueryParam.getOperator();
+        Object variableValue = variableQueryParam.resolveValue(objectMapper);
+        if (op.equals(VariableQueryParameterDto.EQUALS_OPERATOR_NAME)) {
+          query.processVariableValueEquals(variableName, variableValue);
+        } else if (op.equals(VariableQueryParameterDto.NOT_EQUALS_OPERATOR_NAME)) {
+          query.processVariableValueNotEquals(variableName, variableValue);
+        } else if (op.equals(VariableQueryParameterDto.GREATER_THAN_OPERATOR_NAME)) {
+          query.processVariableValueGreaterThan(variableName, variableValue);
+        } else if (op.equals(VariableQueryParameterDto.GREATER_THAN_OR_EQUALS_OPERATOR_NAME)) {
+          query.processVariableValueGreaterThanOrEquals(variableName, variableValue);
+        } else if (op.equals(VariableQueryParameterDto.LESS_THAN_OPERATOR_NAME)) {
+          query.processVariableValueLessThan(variableName, variableValue);
+        } else if (op.equals(VariableQueryParameterDto.LESS_THAN_OR_EQUALS_OPERATOR_NAME)) {
+          query.processVariableValueLessThanOrEquals(variableName, variableValue);
+        } else if (op.equals(VariableQueryParameterDto.LIKE_OPERATOR_NAME)) {
+          query.processVariableValueLike(variableName, String.valueOf(variableValue));
+        } else if (op.equals(VariableQueryParameterDto.NOT_LIKE_OPERATOR_NAME)) {
+          query.processVariableValueNotLike(variableName, String.valueOf(variableValue));
+        } else {
+          throw new InvalidRequestException(Response.Status.BAD_REQUEST, "Invalid process variable comparator specified: " + op);
+        }
+      }
+    }
     if (workerId != null) {
       query.workerId(workerId);
     }
@@ -278,24 +353,10 @@ public class ExternalTaskQueryDto extends AbstractQueryDto<ExternalTaskQuery> {
 
   @Override
   protected void applySortBy(ExternalTaskQuery query, String sortBy, Map<String, Object> parameters, ProcessEngine engine) {
-    if (SORT_BY_ID_VALUE.equals(sortBy)) {
-      query.orderById();
-    }
-    else if (SORT_BY_LOCK_EXPIRATION_TIME.equals(sortBy)) {
-      query.orderByLockExpirationTime();
-    }
-    else if (SORT_BY_PROCESS_DEFINITION_ID.equals(sortBy)) {
-      query.orderByProcessDefinitionId();
-    }
-    else if (SORT_BY_PROCESS_DEFINITION_KEY.equals(sortBy)) {
-      query.orderByProcessDefinitionKey();
-    }
-    else if (SORT_BY_PROCESS_INSTANCE_ID.equals(sortBy)) {
-      query.orderByProcessInstanceId();
-    } else if (sortBy.equals(SORT_BY_TENANT_ID)) {
-      query.orderByTenantId();
-    } else if (sortBy.equals(SORT_BY_PRIORITY)) {
-      query.orderByPriority();
+    var sortByMethod = SORT_METHODS_BY_FIELD.get(sortBy);
+
+    if (sortByMethod != null) {
+      sortByMethod.accept(query);
     }
   }
 }

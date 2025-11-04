@@ -114,7 +114,7 @@ public interface Task {
 
   /**
    * The date/time when this task was last updated.
-   * All operations that fire {@link TaskListener.EVENTNAME_UPDATE} count as an update to the task.
+   * All operations that fire {@link TaskListener#EVENTNAME_UPDATE} count as an update to the task.
    * Returns null if the task was never updated before (i.e. it was only created).
    * */
   Date getLastUpdated();
@@ -188,5 +188,23 @@ public interface Task {
    * @since 7.5
    */
   void setTenantId(String tenantId);
+
+  /**
+   * Returns the task's state.
+   *
+   * @return the task's state
+   */
+  String getTaskState();
+
+  /**
+   * Sets the task state for this task.
+   *
+   * @param taskState the taskState to set
+   */
+  void setTaskState(String taskState);
+  /** Returns if an attachment exists for the task */
+  boolean hasAttachment();
+  /** Signifies if a comment exists for the task */
+  boolean hasComment();
 
 }

@@ -16,9 +16,8 @@
  */
 package org.camunda.bpm.engine.history;
 
-import org.camunda.bpm.engine.EntityTypes;
-
 import java.util.Date;
+import org.camunda.bpm.engine.EntityTypes;
 
 
 /**
@@ -81,8 +80,13 @@ public interface UserOperationLogEntry {
   String OPERATION_TYPE_DELEGATE = "Delegate";
   String OPERATION_TYPE_DELETE = "Delete";
   String OPERATION_TYPE_RESOLVE = "Resolve";
+
   String OPERATION_TYPE_SET_OWNER = "SetOwner";
   String OPERATION_TYPE_SET_PRIORITY = "SetPriority";
+  String OPERATION_TYPE_SET_NAME = "SetName";
+  String OPERATION_TYPE_SET_DESCRIPTION = "SetDescription";
+  String OPERATION_TYPE_SET_FOLLOW_UP_DATE = "SetFollowUpDate";
+
   String OPERATION_TYPE_UPDATE = "Update";
   String OPERATION_TYPE_ACTIVATE = "Activate";
   String OPERATION_TYPE_SUSPEND = "Suspend";
@@ -117,6 +121,9 @@ public interface UserOperationLogEntry {
   String OPERATION_TYPE_SET_EXTERNAL_TASK_RETRIES = "SetExternalTaskRetries";
   String OPERATION_TYPE_SET_VARIABLE = "SetVariable";
   String OPERATION_TYPE_SET_VARIABLES = "SetVariables";
+
+  String OPERATION_TYPE_UPDATE_COMMENT = "UpdateComment";
+  String OPERATION_TYPE_DELETE_COMMENT = "DeleteComment";
 
   String OPERATION_TYPE_REMOVE_VARIABLE = "RemoveVariable";
   String OPERATION_TYPE_MODIFY_VARIABLE = "ModifyVariable";
@@ -230,4 +237,9 @@ public interface UserOperationLogEntry {
   /** An arbitrary annotation set by a user for auditing reasons */
   String getAnnotation();
 
+  /**
+   * The id of the tenant this user operation log belongs to. Can be <code>null</code>
+   * if the user operation log belongs to no single tenant.
+   */
+  String getTenantId();
 }

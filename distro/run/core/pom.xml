@@ -5,13 +5,17 @@
   <parent>
     <groupId>org.camunda.bpm.run</groupId>
     <artifactId>camunda-bpm-run-root</artifactId>
-    <version>7.18.0-SNAPSHOT</version>
+    <version>7.24.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <artifactId>camunda-bpm-run-core</artifactId>
   <name>Camunda Platform - Run - Core</name>
   <packaging>jar</packaging>
+
+  <description>
+    Note: 7.24.0 is the last community edition release published on Maven Central. This library will not receive any new versions or releases. However, if you are interested in extended maintenance you could look into our enterprise edition. Get in touch with us: https://camunda.com/contact/
+  </description>
 
   <properties>
     <!-- generate a bom of compile time dependencies for the license book.
@@ -53,19 +57,6 @@
       <groupId>org.camunda.bpm.springboot</groupId>
       <artifactId>camunda-bpm-spring-boot-starter-rest</artifactId>
     </dependency>
-    
-    <!-- jersey-server (transitive dependency of camunda-bpm-spring-boot-starter-rest)
-      requires JAXB API and Activation API
-      to be present; Its pom has an optional profile 
-      (activated by Java 11+) that adds these dependencies.
-      However, in order to be able to build Run with Java 8 and
-      operate it with Java 11+, we must have a 
-      direct dependency to JAXB, regardless which Java version we 
-      use for building -->
-    <dependency>
-      <groupId>jakarta.xml.bind</groupId>
-      <artifactId>jakarta.xml.bind-api</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -84,7 +75,7 @@
       </exclusions>
     </dependency>
 
-    <!-- spring-webmvc is not a direct requirement of run-core, but is required by modules/swaggerui and modules/webapps.
+    <!-- spring-webmvc is not a direct requirement of run-core, but is required by modules/webapps.
       To avoid having it on the classpath twice, it is included here and becomes part of the uberjar.-->
     <dependency>
       <groupId>org.springframework</groupId>
